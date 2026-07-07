@@ -99,9 +99,14 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
 .score-display{font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--gold)}
 #minimap{position:absolute;bottom:16px;right:16px;width:140px;height:100px;background:rgba(0,0,0,.7);border:1px solid #333;z-index:10;overflow:hidden}
 #minimapCanvas{width:100%;height:100%}
-#abilitiesBar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+#abilitiesBar{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;transition:left .2s,transform .2s}
+#abilitiesBar.abilities-left{left:190px;transform:none}
 .ability-slot{width:60px;height:60px;background:rgba(0,0,0,.8);border:1px solid #444;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px}
 .ability-slot.ready{border-color:var(--acid)}.ability-slot.active{border-color:var(--gold);background:rgba(255,215,0,.1)}
+#weaponSlotsP2{position:absolute;bottom:126px;right:16px;display:none;flex-direction:column;gap:6px;z-index:10}
+#weaponSlotsP2.active{display:flex}
+#abilitiesBarP2{position:absolute;bottom:16px;right:172px;display:none;gap:8px;z-index:10}
+#abilitiesBarP2.active{display:flex}
 .ability-icon{font-size:22px;line-height:1}
 .ability-key{font-size:10px;color:var(--muted);position:absolute;top:3px;right:4px}
 .ability-name{font-size:8px;color:var(--muted);text-align:center;padding:0 2px;line-height:1.1}
@@ -144,12 +149,8 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
 .pause-btns{display:flex;flex-direction:column;gap:12px;margin-top:30px;width:260px}
 
 /* ===== MULTIPLAYER HUD ===== */
-#p2hud{position:absolute;top:0;left:50%;transform:translateX(-50%);background:rgba(0,0,50,0.7);border:1px solid #4488ff;border-top:none;padding:6px 20px;z-index:12;pointer-events:none;display:none;flex-direction:row;gap:20px;align-items:center;border-radius:0 0 8px 8px}
-#p2hud.active{display:flex}
-.p2-stat{display:flex;align-items:center;gap:6px;font-size:13px}
-.p2-label{font-size:10px;letter-spacing:2px;color:#4488ff}
-.p2-hpbar{width:100px;height:8px;background:#001;border:1px solid #4488ff;overflow:hidden;border-radius:2px}
-.p2-hpfill{height:100%;background:#4488ff;transition:width .2s}
+#hudRightP2{display:none}
+#hudRightP2.active{display:flex}
 #p2joinPrompt{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,40,0.95);border:2px solid #4488ff;padding:24px 36px;text-align:center;z-index:50;display:none;flex-direction:column;align-items:center;gap:12px}
 #p2joinPrompt.active{display:flex}
 .p2-join-title{font-family:'Creepster',cursive;font-size:38px;color:#4488ff;text-shadow:0 0 15px #4488ff}
@@ -322,13 +323,14 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
   <div class="controls-grid">
 
     <div class="controls-section">
-      <h3>🕹️ JOGADOR 1 — Movimento</h3>
-      <div class="key-row"><span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span><span class="key-desc">Mover o personagem</span></div>
+      <h3>🕹️ JOGADOR 1 — Movimento (Solo)</h3>
+      <div class="key-row"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span><span class="key-desc">Mover o personagem</span></div>
       <div class="key-row"><span class="key">Mouse</span><span class="key-desc">Mirar</span></div>
       <div class="key-row"><span class="key">Clique ←</span><span class="key-desc">Atirar</span></div>
       <div class="key-row"><span class="key">Clique →</span><span class="key-desc">Trocar arma</span></div>
       <div class="key-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span><span class="key-desc">Selecionar arma direta</span></div>
       <div class="key-row"><span class="key">NUM 0</span><span class="key-desc">Recarregar</span></div>
+      <div class="key-note">ℹ No Multiplayer Local, P1 usa as SETAS ↑←↓→ para mover (já que P2 usa WASD)</div>
     </div>
 
     <div class="controls-section acid-top">
@@ -337,8 +339,8 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
       <div class="key-row"><span class="key">NUM 5</span><span class="key-desc">Medkit — Cura 40% HP</span></div>
       <div class="key-row"><span class="key">NUM 6</span><span class="key-desc">Granada — Explosão</span></div>
       <div class="key-row"><span class="key">NUM 7</span><span class="key-desc">Fúria — +50% dano</span></div>
-      <div class="key-row"><span class="key">ESC</span><span class="key-desc">Pausar / Continuar</span></div>
       <div class="key-row"><span class="key">NUM 9</span><span class="key-desc">Entrar no Bunker</span></div>
+      <div class="key-note">⏸ Pausar é feito clicando no botão PAUSAR no topo da tela</div>
     </div>
 
     <div class="controls-section blue-top">
@@ -372,7 +374,8 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
           • Pegue <strong style="color:#ff6666">cruzes vermelhas</strong> para HP<br>
           • A cada wave, escolha <strong style="color:var(--acid)">1 upgrade</strong><br>
           • O <strong style="color:#4488ff">Bunker</strong> aparece na wave 5<br>
-          • Kills em sequência aumentam o <strong style="color:var(--gold)">multiplicador</strong>
+          • Kills em sequência aumentam o <strong style="color:var(--gold)">multiplicador</strong><br>
+          • No Multiplayer, se um jogador cair, o outro pode <strong style="color:#ff8800">reanimar</strong> ficando perto por alguns segundos
         </div>
       </div>
     </div>
@@ -408,39 +411,33 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
   <button id="pauseBtn" onclick="togglePause()">
     <span class="pause-icon" id="pauseBtnIcon">⏸</span>
     <span id="pauseBtnLabel">PAUSAR</span>
-    <span style="font-size:10px;color:#666;margin-left:4px">[ESC]</span>
   </button>
 
   <!-- CONTROLS QUICK REF (toggle com ? no pauseBtn) -->
   <div id="controlsOverlay">
     <div class="co-title">Controles Rápidos</div>
-    <div class="co-p1">P1: <span class="co-key">↑←↓→</span> mover · Mouse mirar · <span class="co-key">Clique</span> atirar</div>
+    <div class="co-p1" id="coP1Move">P1: <span class="co-key">WASD</span> mover · Mouse mirar · <span class="co-key">Clique</span> atirar</div>
     <div class="co-p1">P1 Habilidades: <span class="co-key">N4</span>Dash <span class="co-key">N5</span>Kit <span class="co-key">N6</span>Gren <span class="co-key">N7</span>Fúria</div>
-    <div class="co-p2">P2: <span class="co-key">WASD</span> mover · <span class="co-key">Espaço</span> atirar (auto-mira)</div>
-    <div class="co-p2">P2 Habilidades: <span class="co-key">Q</span>Dash <span class="co-key">E</span>Kit <span class="co-key">Z</span>Gren <span class="co-key">X</span>Fúria</div>
+    <div class="co-p2" id="coP2Line1">P2: <span class="co-key">WASD</span> mover · <span class="co-key">Espaço</span> atirar (auto-mira)</div>
+    <div class="co-p2" id="coP2Line2">P2 Habilidades: <span class="co-key">Q</span>Dash <span class="co-key">E</span>Kit <span class="co-key">Z</span>Gren <span class="co-key">X</span>Fúria</div>
   </div>
 
   <div id="hud">
     <div class="hud-left">
       <div class="hud-stat"><span class="hud-label">❤ HP</span><div class="health-bar-wrap"><div class="health-bar"><div class="health-fill" id="healthFill"></div></div><span class="hud-value" id="hpText" style="color:var(--blood-bright)">100</span></div></div>
       <div class="hud-stat"><span class="hud-label">⚡ XP</span><div class="xp-bar-wrap"><div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div><span style="font-size:13px;color:var(--acid);font-family:'Share Tech Mono',monospace" id="levelText">Lv.1</span></div></div>
+      <div class="hud-stat"><span class="hud-label">🔫 Munição</span><div><span class="ammo-display" id="ammoDisplay">30</span><span class="ammo-reserve" id="ammoReserve"> / 120</span></div></div>
+      <div class="hud-stat"><span class="hud-label">💀 Kills</span><span class="hud-value" style="color:var(--blood-bright)" id="killsHud">0</span></div>
     </div>
     <div class="hud-center">
       <div class="wave-display" id="waveDisplay">WAVE 1</div>
       <div class="score-display" id="scoreDisplay">0</div>
     </div>
-    <div class="hud-right">
-      <div class="hud-stat"><span class="hud-label">🔫 Munição</span><div><span class="ammo-display" id="ammoDisplay">30</span><span class="ammo-reserve" id="ammoReserve"> / 120</span></div></div>
-      <div class="hud-stat"><span class="hud-label">💀 Kills</span><span class="hud-value" style="color:var(--blood-bright)" id="killsHud">0</span></div>
+    <div class="hud-right" id="hudRightP2">
+      <div class="hud-stat"><span class="hud-label" style="color:#4488ff">❤ HP P2</span><div class="health-bar-wrap"><div class="health-bar" style="border-color:#4488ff"><div class="health-fill" id="p2HpFill" style="background:#4488ff"></div></div><span class="hud-value" id="p2HpText" style="color:#4488ff">100</span></div></div>
+      <div class="hud-stat"><span class="hud-label" style="color:#4488ff">⚡ XP</span><div class="xp-bar-wrap"><div class="xp-bar" style="border-color:#336699"><div class="xp-fill" id="p2XpFill" style="background:#4488ff"></div></div><span style="font-size:13px;color:#88ccff;font-family:'Share Tech Mono',monospace" id="p2LvText">Lv.1</span></div></div>
+      <div class="hud-stat"><span class="hud-label" style="color:#4488ff">💀 Kills</span><span class="hud-value" id="p2KillsText" style="color:#4488ff">0</span><span class="p2-alive-badge" id="p2AliveBadge">✔ VIVO</span></div>
     </div>
-  </div>
-
-  <!-- P2 HUD -->
-  <div id="p2hud">
-    <div class="p2-stat"><span class="p2-label">P2 ❤</span><div class="p2-hpbar"><div class="p2-hpfill" id="p2HpFill"></div></div><span id="p2HpText" style="font-size:12px;font-family:'Share Tech Mono',monospace;color:#4488ff">100</span></div>
-    <div class="p2-stat"><span class="p2-label">Lv.</span><span id="p2LvText" style="font-size:14px;color:#88ccff">1</span></div>
-    <div class="p2-stat"><span class="p2-label">Kills</span><span id="p2KillsText" style="font-size:14px;color:#88ccff">0</span></div>
-    <div class="p2-alive-badge" id="p2AliveBadge">✔ VIVO</div>
   </div>
 
   <!-- P2 join prompt -->
@@ -457,6 +454,8 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
   <div id="sensBadge">Sensibilidade: 50</div>
   <div id="weaponSlots"></div>
   <div id="abilitiesBar"></div>
+  <div id="weaponSlotsP2"></div>
+  <div id="abilitiesBarP2"></div>
   <div id="killFeed"></div>
   <div id="minimap"><canvas id="minimapCanvas" width="140" height="100"></canvas></div>
   <div id="damageFlash"></div>
@@ -484,11 +483,6 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
     <div class="pause-title">PAUSADO</div>
     <div class="pause-btns">
       <button class="btn btn-primary" onclick="togglePause()">▶ CONTINUAR</button>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-        <span style="font-size:12px;letter-spacing:2px;color:var(--muted)">SENSIBILIDADE</span>
-        <input type="range" class="sens-slider" id="pauseSensSlider" min="10" max="200" value="50" oninput="updateSens(this.value);document.getElementById('pauseSensVal').textContent=this.value" style="flex:1">
-        <span class="sens-val" id="pauseSensVal">50</span>
-      </div>
       <button class="btn btn-secondary" onclick="toggleControlsOverlay()" style="font-size:14px">📋 VER CONTROLES</button>
       <button class="btn btn-ghost" onclick="quitGame()">✕ SAIR DA PARTIDA</button>
     </div>
@@ -562,9 +556,7 @@ let SENSITIVITY = 50;
 function updateSens(v){
   SENSITIVITY = parseInt(v);
   document.getElementById('sensVal') && (document.getElementById('sensVal').textContent = v);
-  document.getElementById('pauseSensVal') && (document.getElementById('pauseSensVal').textContent = v);
   document.getElementById('sensSlider') && (document.getElementById('sensSlider').value = v);
-  document.getElementById('pauseSensSlider') && (document.getElementById('pauseSensSlider').value = v);
   const badge = document.getElementById('sensBadge');
   if(badge){ badge.textContent = 'Sensibilidade: ' + v; badge.style.opacity='1'; clearTimeout(badge._t); badge._t=setTimeout(()=>badge.style.opacity='0', 1200); }
 }
@@ -583,12 +575,27 @@ let controlsOverlayVisible=false;
 function isGuest(){return currentUser==='__guest__';}
 function saveUsers(){const toSave={};for(const k in users){if(k!=='__guest__')toSave[k]=users[k];}try{localStorage.setItem(SAVE_KEY,JSON.stringify(toSave));}catch(e){}}
 function saveSession(){if(isGuest())localStorage.removeItem(SESS_KEY);else localStorage.setItem(SESS_KEY,currentUser||'');}
-function getUser(){return currentUser?users[currentUser]:null;}
-function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:200,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[]};}
+function getUser(){
+  if(!currentUser)return null;
+  if(isGuest()){
+    // Convidado: moedas SEMPRE zeradas, nunca persistem
+    if(users['__guest__'])users['__guest__'].coins=0;
+    return users['__guest__'];
+  }
+  return users[currentUser];
+}
+function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[]};}
+function defaultGuest(){return{username:'CONVIDADO',email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[]};}
 
 // ============ SCREENS ============
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function showAuth(tab){showScreen('authScreen');switchAuthTab(tab);}
+function resetAuthForms(){
+  ['loginUser','loginPass','regUser','regEmail','regPass','regPass2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const le=document.getElementById('loginError');if(le)le.style.display='none';
+  const re=document.getElementById('registerError');if(re)re.style.display='none';
+  const rs=document.getElementById('registerSuccess');if(rs)rs.style.display='none';
+}
+function showAuth(tab){resetAuthForms();showScreen('authScreen');switchAuthTab(tab);}
 function switchAuthTab(tab){
   document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
   document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
@@ -614,7 +621,7 @@ function doLogin(){
   if(!user||!pass){err.textContent='Preencha todos os campos.';err.style.display='block';return;}
   if(!users[user]){err.textContent='Usuário não encontrado.';err.style.display='block';return;}
   if(users[user].password!==btoa(pass)){err.textContent='Senha incorreta.';err.style.display='block';return;}
-  currentUser=user;saveSession();goToMenu();
+  currentUser=user;saveSession();resetAuthForms();goToMenu();
 }
 function doRegister(){
   const user=document.getElementById('regUser').value.trim();
@@ -632,10 +639,10 @@ function doRegister(){
   const u=defaultUser(user);u.email=email;u.password=btoa(pass);
   users[user]=u;saveUsers();
   ok.textContent='✓ Conta criada! Fazendo login...';ok.style.display='block';
-  setTimeout(()=>{currentUser=user;saveSession();goToMenu();},1200);
+  setTimeout(()=>{currentUser=user;saveSession();resetAuthForms();goToMenu();},1200);
 }
-function playAsGuest(){currentUser='__guest__';users['__guest__']=defaultUser('CONVIDADO');goToMenu();}
-function logout(){if(isGuest())delete users['__guest__'];currentUser=null;localStorage.removeItem(SESS_KEY);showScreen('titleScreen');}
+function playAsGuest(){currentUser='__guest__';users['__guest__']=defaultGuest();goToMenu();}
+function logout(){if(isGuest())delete users['__guest__'];currentUser=null;localStorage.removeItem(SESS_KEY);resetAuthForms();showScreen('titleScreen');}
 function goToMenu(){updateMenuStats();showScreen('menuScreen');}
 function updateMenuStats(){
   const u=getUser();if(!u)return;
@@ -646,7 +653,7 @@ function updateMenuStats(){
   document.getElementById('statBestScore').textContent=(u.bestScore||0).toLocaleString();
   document.getElementById('statGames').textContent=u.totalGames||0;
   document.getElementById('statKills').textContent=(u.totalKills||0).toLocaleString();
-  document.getElementById('statCoins').textContent=u.coins||0;
+  document.getElementById('statCoins').textContent=guest?0:(u.coins||0);
 }
 
 // ============ SKINS ============
@@ -699,7 +706,7 @@ function confirmSkinAction(){const u=getUser();if(!u||!previewSkinId)return;cons
 function loadShop(){
   const u=getUser();if(!u)return;
   if(!u.ownedSkins)u.ownedSkins=['default'];if(!u.equippedSkin)u.equippedSkin='default';
-  document.getElementById('shopCoinsDisplay').textContent=u.coins||0;
+  document.getElementById('shopCoinsDisplay').textContent=isGuest()?0:(u.coins||0);
   const grid=document.getElementById('shopGrid');grid.innerHTML='';
   SKINS.forEach(skin=>{
     const owned=(u.ownedSkins||[]).includes(skin.id);const equipped=u.equippedSkin===skin.id;
@@ -784,6 +791,18 @@ const START_ABILITIES=[
   {id:'dash',  icon:'💨',name:'Dash',  key:'N4', cd:5000, fn:'useDash'},
   {id:'medkit',icon:'💊',name:'Medkit',key:'N5', cd:30000,fn:'useMedkit'},
 ];
+function giveP2Weapon(g,weaponDef){
+  if(!g.multiplayerMode||!g.p2weapons)return;
+  if(g.p2weapons.find(w=>w.id===weaponDef.id))return;
+  const w={...JSON.parse(JSON.stringify(weaponDef)),currAmmo:weaponDef.ammo,currReserve:weaponDef.reserve};
+  g.p2weapons.push(w);
+}
+function giveP2Ability(g,abilityDef,unshift){
+  if(!g.multiplayerMode||!g.p2abilities)return;
+  if(g.p2abilities.find(a=>a.id===abilityDef.id))return;
+  const a={...abilityDef,lastUsed:-99999,active:false};
+  if(unshift)g.p2abilities.unshift(a);else g.p2abilities.push(a);
+}
 const WAVE_UPGRADES=[
   {id:'hp_up',    icon:'❤', name:'+30 HP Máximo',      desc:'Aumenta HP máximo e atual.',apply:g=>{g.maxHp+=30;g.hp=Math.min(g.hp+30,g.maxHp);}},
   {id:'dmg_up',   icon:'💥',name:'+25% Dano',           desc:'Todas as armas causam mais dano.',apply:g=>{g.dmgMult+=0.25;}},
@@ -797,12 +816,18 @@ const WAVE_UPGRADES=[
   {id:'shield',   icon:'🛡',name:'Escudo de Energia',   desc:'Absorve 1 hit a cada 30s.',apply:g=>{g.hasShield=true;g.shieldActive=true;}},
   {id:'xp_up',    icon:'⭐',name:'+30% XP',             desc:'Ganhe mais experiência.',apply:g=>{g.xpMult+=0.30;}},
   {id:'coin_up',  icon:'💰',name:'+40% Moedas',         desc:'Mais moedas dos inimigos.',apply:g=>{g.coinDropMult+=0.40;}},
-  {id:'w_shotgun',icon:'💥',name:'Nova Arma: Escopeta', desc:'Desbloqueia a Escopeta.',once:'w_shotgun',apply:g=>{if(!g.weapons.find(w=>w.id==='shotgun')){const w={...JSON.parse(JSON.stringify(WEAPONS[1])),currAmmo:WEAPONS[1].ammo,currReserve:WEAPONS[1].reserve};g.weapons.push(w);buildHUD();}}},
-  {id:'w_rifle',  icon:'🎯',name:'Nova Arma: Rifle',    desc:'Desbloqueia o Rifle.',once:'w_rifle',apply:g=>{if(!g.weapons.find(w=>w.id==='rifle')){const w={...JSON.parse(JSON.stringify(WEAPONS[3])),currAmmo:WEAPONS[3].ammo,currReserve:WEAPONS[3].reserve};g.weapons.push(w);buildHUD();}}},
-  {id:'w_rpg',    icon:'🚀',name:'Nova Arma: RPG',      desc:'Desbloqueia o RPG!',once:'w_rpg',apply:g=>{if(!g.weapons.find(w=>w.id==='rpg')){const w={...JSON.parse(JSON.stringify(WEAPONS[4])),currAmmo:WEAPONS[4].ammo,currReserve:WEAPONS[4].reserve};g.weapons.push(w);buildHUD();}}},
-  {id:'abil_gren',icon:'💣',name:'Habilidade: Granada', desc:'Ativa Granada [NUM6].',once:'abil_gren',apply:g=>{if(!g.abilities.find(a=>a.id==='grenade'))g.abilities.unshift({id:'grenade',icon:'💣',name:'Granada',key:'N6',cd:8000,fn:'useGrenade',lastUsed:-99999,active:false});buildHUD();}},
-  {id:'abil_rage',icon:'🔥',name:'Habilidade: Fúria',  desc:'Ativa Fúria [NUM7]. +50% dano por 5s.',once:'abil_rage',apply:g=>{if(!g.abilities.find(a=>a.id==='rage'))g.abilities.push({id:'rage',icon:'🔥',name:'Fúria',key:'N7',cd:20000,fn:'useRage',lastUsed:-99999,active:false});buildHUD();}},
+  {id:'w_shotgun',icon:'💥',name:'Nova Arma: Escopeta', desc:'Desbloqueia a Escopeta.',once:'w_shotgun',apply:g=>{if(!g.weapons.find(w=>w.id==='shotgun')){const w={...JSON.parse(JSON.stringify(WEAPONS[1])),currAmmo:WEAPONS[1].ammo,currReserve:WEAPONS[1].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[1]);buildHUD();}},
+  {id:'w_rifle',  icon:'🎯',name:'Nova Arma: Rifle',    desc:'Desbloqueia o Rifle.',once:'w_rifle',apply:g=>{if(!g.weapons.find(w=>w.id==='rifle')){const w={...JSON.parse(JSON.stringify(WEAPONS[3])),currAmmo:WEAPONS[3].ammo,currReserve:WEAPONS[3].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[3]);buildHUD();}},
+  {id:'w_rpg',    icon:'🚀',name:'Nova Arma: RPG',      desc:'Desbloqueia o RPG!',once:'w_rpg',apply:g=>{if(!g.weapons.find(w=>w.id==='rpg')){const w={...JSON.parse(JSON.stringify(WEAPONS[4])),currAmmo:WEAPONS[4].ammo,currReserve:WEAPONS[4].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[4]);buildHUD();}},
+  {id:'abil_gren',icon:'💣',name:'Habilidade: Granada', desc:'Ativa Granada [NUM6].',once:'abil_gren',apply:g=>{const def={id:'grenade',icon:'💣',name:'Granada',key:'N6',cd:8000,fn:'useGrenade'};if(!g.abilities.find(a=>a.id==='grenade'))g.abilities.unshift({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,true);buildHUD();}},
+  {id:'abil_rage',icon:'🔥',name:'Habilidade: Fúria',  desc:'Ativa Fúria [NUM7]. +50% dano por 5s.',once:'abil_rage',apply:g=>{const def={id:'rage',icon:'🔥',name:'Fúria',key:'N7',cd:20000,fn:'useRage'};if(!g.abilities.find(a=>a.id==='rage'))g.abilities.push({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,false);buildHUD();}},
 ];
+
+// ============ CAÍDO / REANIMAÇÃO (CO-OP) ============
+const DOWN_TIME=15000;      // tempo sangrando até morrer de vez (ms)
+const REVIVE_TIME=3000;     // tempo parado perto do aliado para reanimar (ms)
+const REVIVE_RANGE=70;      // distância máxima para reanimar
+const REVIVE_HEAL_PCT=0.45; // % de HP ao reanimar
 
 // ============ INIT GAME ============
 function initGame(diff){
@@ -844,6 +869,7 @@ function initGame(diff){
     kills:0,score:0,totalDamage:0,coinsEarned:0,
     level:1,xp:0,xpToNext:100,
     combo:0,comboTimer:0,
+    p1Downed:false,p1DownTimer:0,p1ReviveProgress:0,p1Dead:false,revives:0,
 
     // P2 (multiplayer) — WASD + auto-aim
     multiplayerMode:isMultiplayer,
@@ -862,6 +888,7 @@ function initGame(diff){
     p2activeWeapon:0,p2lastShot:0,
     p2shooting:false,
     p2autoAimTarget:null, // auto-aim nearest zombie
+    p2Downed:false,p2DownTimer:0,p2ReviveProgress:0,p2Dead:false,
 
     zombies:[],bullets:[],zbullets:[],particles:[],drops:[],explosions:[],
 
@@ -875,7 +902,21 @@ function initGame(diff){
   G.bunker=placeBunker();
   setupInput();buildHUD();
 
-  document.getElementById('p2hud').classList.toggle('active', isMultiplayer);
+  // Ajusta o texto de referência rápida de controles conforme o modo
+  const coP1Move=document.getElementById('coP1Move');
+  const coP2Line1=document.getElementById('coP2Line1');
+  const coP2Line2=document.getElementById('coP2Line2');
+  if(isMultiplayer){
+    if(coP1Move)coP1Move.innerHTML='P1: <span class="co-key">↑←↓→</span> mover · Mouse mirar · <span class="co-key">Clique</span> atirar';
+    if(coP2Line1)coP2Line1.style.display='';
+    if(coP2Line2)coP2Line2.style.display='';
+  } else {
+    if(coP1Move)coP1Move.innerHTML='P1: <span class="co-key">WASD</span> mover · Mouse mirar · <span class="co-key">Clique</span> atirar';
+    if(coP2Line1)coP2Line1.style.display='none';
+    if(coP2Line2)coP2Line2.style.display='none';
+  }
+
+  document.getElementById('hudRightP2').classList.toggle('active', isMultiplayer);
   document.getElementById('p2AutoAimBadge').classList.toggle('active', false);
   if(isMultiplayer){
     document.getElementById('p2joinPrompt').classList.add('active');
@@ -941,7 +982,7 @@ function confirmBunkerWeapon(){
   const wd=G.bunkerSelectedWeapon;
   const newW={...JSON.parse(JSON.stringify(wd)),currAmmo:wd.ammo,currReserve:wd.reserve};
   G.weapons.push(newW);
-  if(G.p2active){const p2W={...JSON.parse(JSON.stringify(wd)),currAmmo:wd.ammo,currReserve:wd.reserve};G.p2weapons.push(p2W);}
+  giveP2Weapon(G,wd);
   G.bunker.used=true;buildHUD();showNotif(`${wd.icon} ${wd.name} adicionada ao arsenal!`);closeBunker();
 }
 
@@ -976,12 +1017,11 @@ function getP2AutoAimAngle(){
   return G.p2angle; // mantém direção atual se não há zumbis
 }
 
-// ============ INPUT — P1: Setas+Numpad | P2: WASD+Espaço ============
+// ============ INPUT — P1: WASD (Solo) ou Setas (Multiplayer) | P2: WASD+Espaço ============
 function setupInput(){
   document.onkeydown=e=>{
     if(!G.running)return;
     G.keys[e.code]=true;
-    if(e.code==='Escape')togglePause();
 
     // ---- P1 WEAPON SELECT (digits) ----
     if(e.code==='Digit1')switchWeapon(0);
@@ -1004,9 +1044,9 @@ function setupInput(){
       if(G.bunkerNear&&G.bunker&&G.bunker.active&&!G.bunker.used)openBunker();
     }
 
-    // ---- P2: ESPAÇO — entrar OU atirar ----
-    if(e.code==='Space'){
-      if(G.multiplayerMode&&!G.p2joined){
+    // ---- P2: ESPAÇO — entrar OU atirar (somente multiplayer) ----
+    if(e.code==='Space'&&G.multiplayerMode){
+      if(!G.p2joined){
         // Primeiro espaço: entrar na partida
         G.p2joined=true;G.p2active=true;
         document.getElementById('p2joinPrompt').classList.remove('active');
@@ -1019,8 +1059,8 @@ function setupInput(){
       }
     }
 
-    // ---- P2 ABILITIES: Q, E, Z, X ----
-    if(G.p2active){
+    // ---- P2 ABILITIES: Q, E, Z, X (somente multiplayer) ----
+    if(G.p2active&&G.multiplayerMode){
       if(e.code==='KeyQ')useP2AbilityById('dash');
       if(e.code==='KeyE')useP2AbilityById('medkit');
       if(e.code==='KeyZ')useP2AbilityById('grenade');
@@ -1070,7 +1110,38 @@ function buildHUD(){
     el.innerHTML=`<span class="ability-icon">${a.icon}</span><span class="ability-key">${a.key}</span><div class="ability-cd hidden" id="acd_${i}"></div><div class="ability-name">${a.name}</div>`;
     ab.appendChild(el);
   });
+
+  // Layout: no multiplayer, P1 fica do lado esquerdo (armas+habilidades) e P2 do lado direito (armas+habilidades)
+  const wsP2=document.getElementById('weaponSlotsP2');
+  const abP2=document.getElementById('abilitiesBarP2');
+  if(G.multiplayerMode){
+    document.getElementById('abilitiesBar').classList.add('abilities-left');
+    wsP2&&wsP2.classList.add('active');
+    abP2&&abP2.classList.add('active');
+    buildP2HUD();
+  } else {
+    document.getElementById('abilitiesBar').classList.remove('abilities-left');
+    wsP2&&wsP2.classList.remove('active');
+    abP2&&abP2.classList.remove('active');
+  }
 }
+
+function buildP2HUD(){
+  const wsP2=document.getElementById('weaponSlotsP2');if(!wsP2)return;wsP2.innerHTML='';
+  G.p2weapons.forEach((w,i)=>{
+    const el=document.createElement('div');el.className='weapon-slot p2'+(i===G.p2activeWeapon?' active':'');el.id='wslotP2_'+i;el.onclick=()=>switchWeaponP2(i);
+    const ammoText=w.infinite?'∞':w.currAmmo+'/'+w.reserve;
+    el.innerHTML=`<span class="weapon-key">${i+1}</span><span class="weapon-name">${w.icon} ${w.name}</span><span class="weapon-ammo" id="wammoP2_${i}">${ammoText}</span>`;
+    wsP2.appendChild(el);
+  });
+  const abP2=document.getElementById('abilitiesBarP2');if(!abP2)return;abP2.innerHTML='';
+  G.p2abilities.forEach((a,i)=>{
+    const el=document.createElement('div');el.className='ability-slot p2 ready';el.id='aslotP2_'+i;
+    el.innerHTML=`<span class="ability-icon">${a.icon}</span><span class="ability-key">${a.key==='N4'?'Q':a.key==='N5'?'E':a.key==='N6'?'Z':a.key==='N7'?'X':a.key}</span><div class="ability-cd hidden" id="acdP2_${i}"></div><div class="ability-name">${a.name}</div>`;
+    abP2.appendChild(el);
+  });
+}
+function switchWeaponP2(i){if(i>=G.p2weapons.length)return;G.p2activeWeapon=i;G.p2shooting=false;buildP2HUD();}
 
 // ============ WAVE ============
 function startWave(w){
@@ -1105,6 +1176,7 @@ function update(dt,ts){
   if(G.p2active)updateP2(dt,ts);
   updateWeapons(ts);
   if(G.p2active)updateP2Weapons(ts);
+  if(G.multiplayerMode)updateDownedStates(dt);
   updateZombies(dt);
   updateBullets(dt);
   updateZBullets(dt);
@@ -1124,14 +1196,79 @@ function update(dt,ts){
   if(G.hasShield&&!G.shieldActive&&ts-G.shieldCd>30000){G.shieldActive=true;showNotif('🛡 Escudo recarregado!');}
 }
 
-// ============ PLAYER 1 — Setas para movimento ============
+// ============ CAÍDO / REANIMAÇÃO — lógica principal ============
+function updateDownedStates(dt){
+  // --- P1 caído ---
+  if(G.p1Downed){
+    G.p1DownTimer-=dt*16;
+    if(G.p1DownTimer<=0){
+      G.p1Downed=false;G.p1Dead=true;G.p1ReviveProgress=0;
+      showNotif('💀 P1 sangrou até a morte...');
+      if(!G.p2active||G.p2Downed||G.p2hp<=0)endGame();
+    } else {
+      const p2CanRevive=G.p2active&&!G.p2Downed&&!G.p2Dead&&G.p2hp>0;
+      if(p2CanRevive&&Math.hypot(G.px-G.p2x,G.py-G.p2y)<REVIVE_RANGE){
+        G.p1ReviveProgress+=dt*16;
+        if(G.p1ReviveProgress>=REVIVE_TIME){
+          G.p1Downed=false;G.p1ReviveProgress=0;
+          G.hp=Math.max(1,Math.floor(G.maxHp*REVIVE_HEAL_PCT));
+          G.invincible=90;
+          G.revives=(G.revives||0)+1;
+          showNotif('❤ P1 REANIMADO por P2!');
+        }
+      } else {
+        G.p1ReviveProgress=Math.max(0,G.p1ReviveProgress-dt*16*0.5);
+      }
+    }
+  }
+  // --- P2 caído ---
+  if(G.p2Downed){
+    G.p2DownTimer-=dt*16;
+    if(G.p2DownTimer<=0){
+      G.p2Downed=false;G.p2Dead=true;G.p2active=false;G.p2ReviveProgress=0;
+      document.getElementById('p2AliveBadge').textContent='✖ MORREU';
+      document.getElementById('p2AliveBadge').style.background='rgba(100,0,0,0.4)';
+      document.getElementById('p2AliveBadge').style.borderColor='var(--blood)';
+      showNotif('💀 P2 sangrou até a morte...');
+      if(G.hp<=0||G.p1Downed||G.p1Dead)endGame();
+    } else {
+      const p1CanRevive=!G.p1Downed&&!G.p1Dead&&G.hp>0;
+      if(p1CanRevive&&Math.hypot(G.px-G.p2x,G.py-G.p2y)<REVIVE_RANGE){
+        G.p2ReviveProgress+=dt*16;
+        if(G.p2ReviveProgress>=REVIVE_TIME){
+          G.p2Downed=false;G.p2ReviveProgress=0;
+          G.p2hp=Math.max(1,Math.floor(G.p2maxHp*REVIVE_HEAL_PCT));
+          G.p2invincible=90;
+          G.revives=(G.revives||0)+1;
+          document.getElementById('p2AliveBadge').textContent='✔ VIVO';
+          document.getElementById('p2AliveBadge').style.background='rgba(0,100,255,0.3)';
+          document.getElementById('p2AliveBadge').style.borderColor='#4488ff';
+          showNotif('❤ P2 REANIMADO por P1!');
+        }
+      } else {
+        G.p2ReviveProgress=Math.max(0,G.p2ReviveProgress-dt*16*0.5);
+      }
+    }
+  }
+}
+
+// ============ PLAYER 1 — WASD (Solo) ou Setas (Multiplayer, pois P2 usa WASD) ============
 function updatePlayer(dt){
+  if(G.p1Downed){if(G.invincible>0)G.invincible-=dt*16;return;}
   const k=G.keys;let dx=0,dy=0;
-  // P1 usa setas para movimento
-  if(k['ArrowUp'])   dy-=1;
-  if(k['ArrowDown']) dy+=1;
-  if(k['ArrowLeft']) dx-=1;
-  if(k['ArrowRight'])dx+=1;
+  if(G.multiplayerMode){
+    // Multiplayer: P1 usa SETAS (P2 já usa WASD)
+    if(k['ArrowUp'])   dy-=1;
+    if(k['ArrowDown']) dy+=1;
+    if(k['ArrowLeft']) dx-=1;
+    if(k['ArrowRight'])dx+=1;
+  } else {
+    // Solo: P1 usa WASD
+    if(k['KeyW'])dy-=1;
+    if(k['KeyS'])dy+=1;
+    if(k['KeyA'])dx-=1;
+    if(k['KeyD'])dx+=1;
+  }
   if(G.dashTimer>0){dx+=G.dashDx*(G.dashTimer/8);dy+=G.dashDy*(G.dashTimer/8);G.dashTimer-=dt;}
   const len=Math.hypot(dx,dy)||1;const spd=G.pspeed*(G.rageActive?1.4:1)*dt;
   const nx=G.px+(dx/len)*spd,ny=G.py+(dy/len)*spd;
@@ -1143,8 +1280,9 @@ function updatePlayer(dt){
   if(G.invincible>0)G.invincible-=dt*16;
 }
 
-// ============ PLAYER 2 — WASD para movimento + auto-aim ============
+// ============ PLAYER 2 — WASD para movimento + auto-aim (somente multiplayer) ============
 function updateP2(dt,ts){
+  if(G.p2Downed){if(G.p2invincible>0)G.p2invincible-=dt*16;return;}
   const k=G.keys;let dx=0,dy=0;
   // P2 usa WASD
   if(k['KeyW'])dy-=1;
@@ -1173,6 +1311,7 @@ function updateP2(dt,ts){
 }
 
 function updateP2Weapons(ts){
+  if(G.p2Downed)return;
   if(!G.p2shooting)return;
   const w=G.p2weapons[G.p2activeWeapon];if(!w)return;
   if(ts-G.p2lastShot<w.rof)return;
@@ -1201,6 +1340,7 @@ function updateP2Weapons(ts){
 }
 
 function useP2AbilityById(id){
+  if(G.p2Downed)return;
   const idx=G.p2abilities.findIndex(a=>a.id===id);if(idx<0)return;
   const a=G.p2abilities[idx];const ts=performance.now();
   if(ts-a.lastUsed<a.cd)return;
@@ -1220,16 +1360,27 @@ function useP2AbilityById(id){
   }
 }
 function damageP2(dmg){
+  if(G.p2Downed||G.p2Dead)return;
   if(G.p2invincible>0)return;
   G.p2hp-=dmg;G.p2invincible=40;
   const fl=document.getElementById('damageFlash');fl.style.opacity='0.5';setTimeout(()=>fl.style.opacity='0',80);
-  if(G.p2hp<=0){G.p2hp=0;G.p2active=false;
-    document.getElementById('p2AliveBadge').textContent='✖ MORREU';
-    document.getElementById('p2AliveBadge').style.background='rgba(100,0,0,0.4)';
-    document.getElementById('p2AliveBadge').style.borderColor='var(--blood)';
-    document.getElementById('p2AutoAimBadge').classList.remove('active');
-    showNotif('💀 Jogador 2 eliminado!');
-    if(G.hp<=0)endGame();
+  if(G.p2hp<=0){G.p2hp=0;
+    const allyCanRevive=!G.p1Downed&&!G.p1Dead&&G.hp>0;
+    if(allyCanRevive){
+      G.p2Downed=true;G.p2DownTimer=DOWN_TIME;G.p2ReviveProgress=0;G.p2shooting=false;
+      document.getElementById('p2AliveBadge').textContent='🩸 CAÍDO';
+      document.getElementById('p2AliveBadge').style.background='rgba(255,140,0,0.3)';
+      document.getElementById('p2AliveBadge').style.borderColor='#ff8800';
+      showNotif('🩸 P2 CAÍDO! P1 precisa reanimar!');
+    } else {
+      G.p2Dead=true;G.p2active=false;
+      document.getElementById('p2AliveBadge').textContent='✖ MORREU';
+      document.getElementById('p2AliveBadge').style.background='rgba(100,0,0,0.4)';
+      document.getElementById('p2AliveBadge').style.borderColor='var(--blood)';
+      document.getElementById('p2AutoAimBadge').classList.remove('active');
+      showNotif('💀 Jogador 2 eliminado!');
+      if(G.hp<=0||G.p1Downed||G.p1Dead)endGame();
+    }
   }
 }
 
@@ -1241,6 +1392,7 @@ function startReload(){
   G.reloading=true;G.reloadStart=performance.now();
 }
 function updateWeapons(ts){
+  if(G.p1Downed)return;
   const w=G.weapons[G.activeWeapon];
   const reloadTime=w.reload*G.reloadMult;
   if(G.reloading&&!w.infinite){
@@ -1414,13 +1566,19 @@ function addKillFeed(z,fromP2){
   feed.appendChild(el);setTimeout(()=>el.remove(),3000);
 }
 function damagePlayer(dmg){
+  if(G.p1Downed||G.p1Dead)return;
   if(G.invincible>0)return;
   if(G.shieldActive){G.shieldActive=false;G.shieldCd=performance.now();showNotif('🛡 Escudo quebrado!');return;}
   G.hp-=dmg;G.combo=0;G.invincible=G.skin.id==='ghost'?80:40;
   const fl=document.getElementById('damageFlash');fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',150);
   if(G.hp<=0){G.hp=0;
-    if(!G.multiplayerMode||(G.multiplayerMode&&(!G.p2active||G.p2hp<=0)))endGame();
-    else showNotif('💀 P1 eliminado! P2 continua...');
+    const allyCanRevive=G.multiplayerMode&&G.p2active&&!G.p2Downed&&!G.p2Dead&&G.p2hp>0;
+    if(allyCanRevive){
+      G.p1Downed=true;G.p1DownTimer=DOWN_TIME;G.p1ReviveProgress=0;G.shooting=false;
+      showNotif('🩸 P1 CAÍDO! P2 precisa reanimar!');
+    } else {
+      endGame();
+    }
   }
 }
 
@@ -1459,6 +1617,7 @@ function gainXP(xp,forP2=false){
 
 // ============ ABILITIES P1 (Numpad) ============
 function useAbilityById(id){
+  if(G.p1Downed)return;
   const idx=G.abilities.findIndex(a=>a.id===id);if(idx<0)return;
   const a=G.abilities[idx];const ts=performance.now();if(ts-a.lastUsed<a.cd)return;
   a.lastUsed=ts;const fn=window[a.fn];if(typeof fn==='function')fn();
@@ -1476,6 +1635,15 @@ function updateAbilities(ts){
     if(rem>0){el.classList.remove('ready');cd.classList.remove('hidden');cd.textContent=(rem/1000).toFixed(1);}
     else{el.classList.add('ready');cd.classList.add('hidden');}
   });
+  if(G.multiplayerMode&&G.p2abilities){
+    G.p2abilities.forEach((a,i)=>{
+      const rem=Math.max(0,a.cd-(ts-a.lastUsed));
+      const el=document.getElementById('aslotP2_'+i);const cd=document.getElementById('acdP2_'+i);
+      if(!el||!cd)return;
+      if(rem>0){el.classList.remove('ready');cd.classList.remove('hidden');cd.textContent=(rem/1000).toFixed(1);}
+      else{el.classList.add('ready');cd.classList.add('hidden');}
+    });
+  }
 }
 
 // ============ WAVE COMPLETE + UPGRADES ============
@@ -1508,7 +1676,7 @@ function selectUpgrade(upg){
 function updateCamera(){
   const cw=G.canvas.width,ch=G.canvas.height;
   let cx=G.px,cy=G.py;
-  if(G.p2active&&G.p2hp>0){cx=(G.px+G.p2x)/2;cy=(G.py+G.p2y)/2;}
+  if(G.p2active&&(G.p2hp>0||G.p2Downed)){cx=(G.px+G.p2x)/2;cy=(G.py+G.p2y)/2;}
   G.camX=Math.max(0,Math.min(MAP_W*TILE-cw,cx-cw/2));
   G.camY=Math.max(0,Math.min(MAP_H*TILE-ch,cy-ch/2));
 }
@@ -1519,7 +1687,7 @@ function updateHUD(){
   const hp=G.hp/G.maxHp*100;
   document.getElementById('healthFill').style.width=Math.max(0,hp)+'%';
   document.getElementById('healthFill').style.background=hp>50?'var(--blood-bright)':hp>25?'#FF6600':'#FF0000';
-  document.getElementById('hpText').textContent=Math.ceil(G.hp);
+  document.getElementById('hpText').textContent=G.p1Downed?'CAÍDO':Math.ceil(G.hp);
   document.getElementById('xpFill').style.width=(G.xp/G.xpToNext*100)+'%';
   document.getElementById('levelText').textContent='Lv.'+G.level;
   document.getElementById('waveDisplay').textContent='WAVE '+G.wave;
@@ -1531,13 +1699,20 @@ function updateHUD(){
     const ae=document.getElementById('wammo_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.reserve}`;
     const se=document.getElementById('wslot_'+i);if(se)se.classList.toggle('active',i===G.activeWeapon);
   });
+  if(G.multiplayerMode&&G.p2weapons){
+    G.p2weapons.forEach((ww,i)=>{
+      const ae=document.getElementById('wammoP2_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.reserve}`;
+      const se=document.getElementById('wslotP2_'+i);if(se)se.classList.toggle('active',i===G.p2activeWeapon);
+    });
+  }
 }
 function updateP2HUD(){
   const pct=G.p2hp/G.p2maxHp*100;
   document.getElementById('p2HpFill').style.width=Math.max(0,pct)+'%';
   document.getElementById('p2HpFill').style.background=pct>50?'#4488ff':pct>25?'#ff8800':'#ff0000';
-  document.getElementById('p2HpText').textContent=Math.ceil(G.p2hp);
-  document.getElementById('p2LvText').textContent=G.p2level;
+  document.getElementById('p2HpText').textContent=G.p2Downed?'CAÍDO':Math.ceil(G.p2hp);
+  document.getElementById('p2XpFill').style.width=(G.p2xp/G.p2xpToNext*100)+'%';
+  document.getElementById('p2LvText').textContent='Lv.'+G.p2level;
   document.getElementById('p2KillsText').textContent=G.p2kills;
 }
 function updateKillFeed(){const f=document.getElementById('killFeed');while(f.children.length>5)f.removeChild(f.firstChild);}
@@ -1553,6 +1728,7 @@ const ACHIEVEMENTS=[
   {id:'lv5',   name:'Experiente',      icon:'⭐',check:()=>G.level>=5},
   {id:'bunker',name:'Saqueador',       icon:'🏚',check:()=>G.bunker&&G.bunker.used},
   {id:'coop',  name:'Melhor Dupla',    icon:'👥',check:()=>G.multiplayerMode&&G.p2kills>=5},
+  {id:'hero',  name:'Herói',          icon:'❤', check:()=>G.multiplayerMode&&(G.revives||0)>=1},
 ];
 function checkAchievements(){
   const u=getUser();if(!u||isGuest())return;if(!u.achievements)u.achievements=[];
@@ -1623,8 +1799,36 @@ function renderBunkerIndicator(ctx){
   ctx.globalAlpha=1;ctx.restore();
   if(G.bunkerNear){ctx.save();ctx.strokeStyle='rgba(68,136,255,0.5)';ctx.lineWidth=2;const r=(12+Math.sin(Date.now()*.005)*4);ctx.beginPath();ctx.arc(x,y,r+30,0,Math.PI*2);ctx.stroke();ctx.restore();}
 }
+function renderDownedCharacter(ctx,x,y,label,downTimer,reviveProgress,color){
+  const pulse=0.5+Math.sin(Date.now()*0.006)*0.3;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(x,y+8,12,5,0,0,Math.PI*2);ctx.fill();
+  ctx.translate(x,y);ctx.rotate(Math.PI/2);
+  ctx.globalAlpha=0.9;
+  ctx.fillStyle='#5a2a2a';ctx.beginPath();ctx.roundRect(-8,-10,16,20,4);ctx.fill();
+  ctx.fillStyle='#7a4a4a';ctx.beginPath();ctx.arc(0,-14,8,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha=pulse;ctx.strokeStyle=color;ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.font='bold 10px Oswald';ctx.fillStyle=color;ctx.textAlign='center';
+  ctx.fillText(label+' CAÍDO',x,y+34);
+  ctx.restore();
+  const bw=42,bh=5,bx=x-bw/2,by=y-32;
+  const pct=Math.max(0,downTimer/DOWN_TIME);
+  ctx.fillStyle='#330000';ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle='#ff2222';ctx.fillRect(bx,by,bw*pct,bh);
+  if(reviveProgress>0){
+    const rpct=Math.min(1,reviveProgress/REVIVE_TIME);
+    ctx.fillStyle='#003300';ctx.fillRect(bx,by-8,bw,bh);
+    ctx.fillStyle='#39FF14';ctx.fillRect(bx,by-8,bw*rpct,bh);
+  }
+}
 function renderPlayer(ctx){
   const{px:x,py:y,skin}=G;
+  if(G.p1Downed){renderDownedCharacter(ctx,x,y,'P1',G.p1DownTimer,G.p1ReviveProgress,'#ff4444');return;}
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(x,y+12,10,5,0,0,Math.PI*2);ctx.fill();
   ctx.translate(x,y);ctx.rotate(G.aimAngle);
@@ -1639,6 +1843,7 @@ function renderPlayer(ctx){
 }
 function renderP2(ctx){
   const x=G.p2x,y=G.p2y;
+  if(G.p2Downed){renderDownedCharacter(ctx,x,y,'P2',G.p2DownTimer,G.p2ReviveProgress,'#4488ff');return;}
   ctx.save();
   ctx.fillStyle='rgba(0,0,50,0.4)';ctx.beginPath();ctx.ellipse(x,y+12,10,5,0,0,Math.PI*2);ctx.fill();
   ctx.translate(x,y);ctx.rotate(G.p2angle);
@@ -1745,7 +1950,19 @@ function endGame(){
   G.running=false;document.onkeydown=null;document.onkeyup=null;
   if(G.canvas){G.canvas.onmousedown=null;G.canvas.onmouseup=null;G.canvas.onmousemove=null;}
   const guest=isGuest();
-  if(!guest){const u=getUser();if(u){u.totalGames=(u.totalGames||0)+1;u.totalKills=(u.totalKills||0)+G.kills;u.coins=(u.coins||0)+G.coinsEarned;if(G.score>(u.bestScore||0)){u.bestScore=G.score;u.bestWave=G.wave;u.bestDiff=DIFF_CONFIGS[G.diff].name;}saveUsers();}}
+  if(!guest){
+    const u=getUser();
+    if(u){
+      u.totalGames=(u.totalGames||0)+1;
+      u.totalKills=(u.totalKills||0)+G.kills;
+      u.coins=(u.coins||0)+G.coinsEarned;
+      if(G.score>(u.bestScore||0)){u.bestScore=G.score;u.bestWave=G.wave;u.bestDiff=DIFF_CONFIGS[G.diff].name;}
+      saveUsers();
+    }
+  } else {
+    // Convidado: garante que moedas nunca fiquem salvas/acumuladas
+    if(users['__guest__'])users['__guest__'].coins=0;
+  }
   document.getElementById('guestNoSave').style.display=guest?'block':'none';
   document.getElementById('goScore').textContent=G.score.toLocaleString();
   document.getElementById('goWave').textContent=G.wave;
@@ -1757,7 +1974,7 @@ function endGame(){
   const p2stat=document.getElementById('goP2KillsStat');
   if(G.multiplayerMode){p2stat.style.display='block';document.getElementById('goP2Kills').textContent=G.p2kills;}
   else p2stat.style.display='none';
-  document.getElementById('p2hud').classList.remove('active');
+  document.getElementById('hudRightP2').classList.remove('active');
   document.getElementById('p2joinPrompt').classList.remove('active');
   document.getElementById('p2AutoAimBadge').classList.remove('active');
   showScreen('gameOverScreen');
@@ -1765,10 +1982,15 @@ function endGame(){
 function quitGame(){
   G.running=false;document.onkeydown=null;document.onkeyup=null;
   document.getElementById('bunkerScreen').classList.remove('active');
-  document.getElementById('p2hud').classList.remove('active');
+  document.getElementById('hudRightP2').classList.remove('active');
   document.getElementById('p2joinPrompt').classList.remove('active');
   document.getElementById('p2AutoAimBadge').classList.remove('active');
-  if(!isGuest()){const u=getUser();if(u){u.totalGames=(u.totalGames||0)+1;u.coins=(u.coins||0)+G.coinsEarned;saveUsers();}}
+  if(!isGuest()){
+    const u=getUser();
+    if(u){u.totalGames=(u.totalGames||0)+1;u.coins=(u.coins||0)+G.coinsEarned;saveUsers();}
+  } else {
+    if(users['__guest__'])users['__guest__'].coins=0;
+  }
   showScreen('menuScreen');updateMenuStats();
 }
 function togglePause(){
@@ -1777,8 +1999,6 @@ function togglePause(){
   document.getElementById('pauseScreen').classList.toggle('active',G.paused);
   updatePauseBtn(G.paused);
   if(G.paused){
-    document.getElementById('pauseSensSlider').value=SENSITIVITY;
-    document.getElementById('pauseSensVal').textContent=SENSITIVITY;
     // Esconde overlay de controles ao abrir pause
     controlsOverlayVisible=false;
     document.getElementById('controlsOverlay').classList.remove('show');
