@@ -136,6 +136,7 @@ body{background:var(--darker);color:var(--text);font-family:'Oswald',sans-serif;
 .upgrade-card:hover{border-color:var(--gold);transform:translateY(-4px);background:#1a1a00}
 .upgrade-card-icon{font-size:42px;margin-bottom:8px}
 .upgrade-card-name{font-size:15px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.upgrade-card-level{font-size:10px;font-weight:700;color:var(--acid);letter-spacing:2px;margin-top:4px}
 .upgrade-card-desc{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
 
 /* ===== PAUSE BUTTON NO CANTO SUPERIOR ===== */
@@ -584,8 +585,15 @@ function getUser(){
   }
   return users[currentUser];
 }
-function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[]};}
-function defaultGuest(){return{username:'CONVIDADO',email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[]};}
+function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades()};}
+function defaultGuest(){return{username:'CONVIDADO',email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades()};}
+function defaultMetaUpgrades(){return{hpLevel:0,dmgLevel:0,speedLevel:0,coinLevel:0,weapons:[],abilities:[]};}
+function getMetaUpgrades(){
+  const u=getUser();
+  if(!u)return defaultMetaUpgrades();
+  if(!u.metaUpgrades)u.metaUpgrades=defaultMetaUpgrades();
+  return u.metaUpgrades;
+}
 
 // ============ SCREENS ============
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
@@ -803,24 +811,106 @@ function giveP2Ability(g,abilityDef,unshift){
   const a={...abilityDef,lastUsed:-99999,active:false};
   if(unshift)g.p2abilities.unshift(a);else g.p2abilities.push(a);
 }
+// ============ SISTEMA DE UPGRADES (com níveis) ============
+function upgLevel(g,id){return (g.upgLevels&&g.upgLevels[id])||0;}
+function isUpgradeMaxed(g,u){
+  if(u.once)return g.unlockedUpgrades.includes(u.once);
+  if(u.maxLevel!=null)return upgLevel(g,u.id)>=u.maxLevel;
+  return false;
+}
+function recalcUpgradeStats(g){
+  const L=id=>upgLevel(g,id);
+  // HP máximo — cura pela diferença ao subir de nível, sem resetar o dano já sofrido
+  const newMaxHp=g.baseMaxHp+30*L('hp_up');
+  const hpGain=newMaxHp-g.maxHp;g.maxHp=newMaxHp;
+  if(hpGain>0)g.hp=Math.min(g.maxHp,g.hp+hpGain);
+  if(g.multiplayerMode){
+    const newP2MaxHp=g.baseP2MaxHp+30*L('hp_up');
+    const p2Gain=newP2MaxHp-g.p2maxHp;g.p2maxHp=newP2MaxHp;
+    if(p2Gain>0&&g.p2hp>0)g.p2hp=Math.min(g.p2maxHp,g.p2hp+p2Gain);
+  }
+  // Dano (compartilhado entre P1 e P2)
+  g.dmgMult=g.baseDmgMult+0.20*L('dmg_up');
+  // Crítico (compartilhado)
+  g.critChance=Math.min(0.75,g.baseCritChance+0.10*L('crit_up'));
+  // Recarga (compartilhado)
+  g.reloadMult=Math.max(0.3,g.baseReloadMult-0.12*L('reload_up'));
+  // Regeneração (cada jogador regenera na sua própria vida)
+  g.regenPerSec=g.baseRegenPerSec+1*L('regen');
+  g.p2RegenPerSec=g.baseP2RegenPerSec+1*L('regen');
+  // Vampirismo (compartilhado — quem mata, cura)
+  g.vampireHeal=g.baseVampireHeal+3*L('vampire');
+  // XP / Moedas (compartilhado)
+  g.xpMult=g.baseXpMult+0.25*L('xp_up');
+  g.coinDropMult=g.baseCoinDropMult+0.35*L('coin_up');
+  // Velocidade (compartilhado)
+  const speedMult=1+0.12*L('speed_up');
+  g.pspeed=g.basePspeed*speedMult;
+  g.p2speed=g.baseP2Speed*speedMult;
+  // Escudo — soma com o bônus passivo de skin, recarrega mais rápido por nível
+  const shLvl=L('shield');
+  g.hasShield=g.skinHasShield||shLvl>0;
+  g.p2HasShield=g.multiplayerMode&&shLvl>0;
+  g.shieldMaxCd=shLvl>0?Math.max(8000,30000-(shLvl-1)*5000):30000;
+  // Mortes explosivas — raio e dano crescem por nível
+  const exLvl=L('explosion');
+  g.explosiveDeath=exLvl>0;
+  g.explosiveDeathRadius=exLvl>0?50+(exLvl-1)*15:0;
+  g.explosiveDeathDamage=exLvl>0?25+(exLvl-1)*12:0;
+}
+function pickUpgrade(g,u){
+  const cur=g.upgLevels[u.id]||0;
+  g.upgLevels[u.id]=u.maxLevel!=null?Math.min(u.maxLevel,cur+1):cur+1;
+  u.apply(g);
+  if(u.once)g.unlockedUpgrades.push(u.once);
+}
+
 const WAVE_UPGRADES=[
-  {id:'hp_up',    icon:'❤', name:'+30 HP Máximo',      desc:'Aumenta HP máximo e atual.',apply:g=>{g.maxHp+=30;g.hp=Math.min(g.hp+30,g.maxHp);}},
-  {id:'dmg_up',   icon:'💥',name:'+25% Dano',           desc:'Todas as armas causam mais dano.',apply:g=>{g.dmgMult+=0.25;}},
-  {id:'speed_up', icon:'⚡',name:'+20% Velocidade',     desc:'Você se move mais rápido.',apply:g=>{g.pspeed*=1.20;}},
-  {id:'reload_up',icon:'🔄',name:'Reload Mais Rápido',  desc:'-20% tempo de recarga.',apply:g=>{g.reloadMult=Math.max(0.3,g.reloadMult-0.20);}},
-  {id:'ammo_up',  icon:'📦',name:'+50% Reserva',        desc:'Mais balas na reserva.',apply:g=>{g.weapons.forEach(w=>{if(!w.infinite)w.currReserve=Math.floor(w.currReserve*1.5);});}},
-  {id:'crit_up',  icon:'🎯',name:'+15% Crítico',        desc:'Maior chance de acerto crítico.',apply:g=>{g.critChance=Math.min(0.75,g.critChance+0.15);}},
-  {id:'regen',    icon:'🩸',name:'Regeneração +1/s',    desc:'Recupera 1 HP por segundo.',apply:g=>{g.regenPerSec+=1;}},
-  {id:'vampire',  icon:'🦇',name:'Vampirismo +3HP',     desc:'Recupera 3 HP por kill.',apply:g=>{g.vampireHeal+=3;}},
-  {id:'explosion',icon:'💣',name:'Mortes Explosivas',   desc:'Cada kill causa área de dano.',apply:g=>{g.explosiveDeath=true;}},
-  {id:'shield',   icon:'🛡',name:'Escudo de Energia',   desc:'Absorve 1 hit a cada 30s.',apply:g=>{g.hasShield=true;g.shieldActive=true;}},
-  {id:'xp_up',    icon:'⭐',name:'+30% XP',             desc:'Ganhe mais experiência.',apply:g=>{g.xpMult+=0.30;}},
-  {id:'coin_up',  icon:'💰',name:'+40% Moedas',         desc:'Mais moedas dos inimigos.',apply:g=>{g.coinDropMult+=0.40;}},
-  {id:'w_shotgun',icon:'💥',name:'Nova Arma: Escopeta', desc:'Desbloqueia a Escopeta.',once:'w_shotgun',apply:g=>{if(!g.weapons.find(w=>w.id==='shotgun')){const w={...JSON.parse(JSON.stringify(WEAPONS[1])),currAmmo:WEAPONS[1].ammo,currReserve:WEAPONS[1].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[1]);buildHUD();}},
-  {id:'w_rifle',  icon:'🎯',name:'Nova Arma: Rifle',    desc:'Desbloqueia o Rifle.',once:'w_rifle',apply:g=>{if(!g.weapons.find(w=>w.id==='rifle')){const w={...JSON.parse(JSON.stringify(WEAPONS[3])),currAmmo:WEAPONS[3].ammo,currReserve:WEAPONS[3].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[3]);buildHUD();}},
-  {id:'w_rpg',    icon:'🚀',name:'Nova Arma: RPG',      desc:'Desbloqueia o RPG!',once:'w_rpg',apply:g=>{if(!g.weapons.find(w=>w.id==='rpg')){const w={...JSON.parse(JSON.stringify(WEAPONS[4])),currAmmo:WEAPONS[4].ammo,currReserve:WEAPONS[4].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[4]);buildHUD();}},
-  {id:'abil_gren',icon:'💣',name:'Habilidade: Granada', desc:'Ativa Granada [NUM6].',once:'abil_gren',apply:g=>{const def={id:'grenade',icon:'💣',name:'Granada',key:'N6',cd:8000,fn:'useGrenade'};if(!g.abilities.find(a=>a.id==='grenade'))g.abilities.unshift({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,true);buildHUD();}},
-  {id:'abil_rage',icon:'🔥',name:'Habilidade: Fúria',  desc:'Ativa Fúria [NUM7]. +50% dano por 5s.',once:'abil_rage',apply:g=>{const def={id:'rage',icon:'🔥',name:'Fúria',key:'N7',cd:20000,fn:'useRage'};if(!g.abilities.find(a=>a.id==='rage'))g.abilities.push({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,false);buildHUD();}},
+  {id:'hp_up',    icon:'❤', name:'Vida Máxima',       maxLevel:8,
+    desc:lvl=>`+30 HP máximo (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'dmg_up',   icon:'💥',name:'Dano',               maxLevel:8,
+    desc:lvl=>`+20% de dano em todas as armas (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'speed_up', icon:'⚡',name:'Velocidade',         maxLevel:6,
+    desc:lvl=>`+12% de velocidade de movimento (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'reload_up',icon:'🔄',name:'Recarga Rápida',     maxLevel:6,
+    desc:lvl=>`-12% no tempo de recarga (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'ammo_up',  icon:'📦',name:'Munição Extra',      maxLevel:10,
+    desc:lvl=>`Enche +50% da reserva de todas as armas agora (Nível ${lvl})`,
+    apply:g=>{
+      const boost=w=>{const base=WEAPONS.find(bw=>bw.id===w.id);const maxRes=base?base.reserve:w.reserve;const add=Math.floor(maxRes*0.5);w.currReserve=Math.min(w.currReserve+add,maxRes*3);};
+      g.weapons.forEach(w=>{if(!w.infinite)boost(w);});
+      if(g.multiplayerMode)g.p2weapons.forEach(w=>{if(!w.infinite)boost(w);});
+    }},
+  {id:'crit_up',  icon:'🎯',name:'Crítico',            maxLevel:6,
+    desc:lvl=>`+10% de chance de acerto crítico (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'regen',    icon:'🩸',name:'Regeneração',        maxLevel:5,
+    desc:lvl=>`+1 HP por segundo, para os dois jogadores (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'vampire',  icon:'🦇',name:'Vampirismo',         maxLevel:5,
+    desc:lvl=>`+3 HP a cada abate, para quem matar (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'explosion',icon:'💣',name:'Mortes Explosivas',  maxLevel:5,
+    desc:lvl=>`Abates causam explosão em área — raio e dano maiores (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'shield',   icon:'🛡',name:'Escudo de Energia',  maxLevel:5,
+    desc:lvl=>`Absorve 1 hit — recarrega mais rápido a cada nível (Nível ${lvl})`,
+    apply:g=>{recalcUpgradeStats(g);g.shieldActive=true;if(g.multiplayerMode)g.p2ShieldActive=true;}},
+  {id:'xp_up',    icon:'⭐',name:'Experiência',        maxLevel:6,
+    desc:lvl=>`+25% de XP ganho (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'coin_up',  icon:'💰',name:'Sorte de Moedas',    maxLevel:6,
+    desc:lvl=>`+35% de moedas dropadas pelos inimigos (Nível ${lvl})`,
+    apply:g=>recalcUpgradeStats(g)},
+  {id:'w_shotgun',icon:'💥',name:'Nova Arma: Escopeta', desc:()=>'Desbloqueia a Escopeta para os dois jogadores.',once:'w_shotgun',apply:g=>{if(!g.weapons.find(w=>w.id==='shotgun')){const w={...JSON.parse(JSON.stringify(WEAPONS[1])),currAmmo:WEAPONS[1].ammo,currReserve:WEAPONS[1].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[1]);buildHUD();}},
+  {id:'w_rifle',  icon:'🎯',name:'Nova Arma: Rifle',    desc:()=>'Desbloqueia o Rifle para os dois jogadores.',once:'w_rifle',apply:g=>{if(!g.weapons.find(w=>w.id==='rifle')){const w={...JSON.parse(JSON.stringify(WEAPONS[3])),currAmmo:WEAPONS[3].ammo,currReserve:WEAPONS[3].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[3]);buildHUD();}},
+  {id:'w_rpg',    icon:'🚀',name:'Nova Arma: RPG',      desc:()=>'Desbloqueia o RPG para os dois jogadores!',once:'w_rpg',apply:g=>{if(!g.weapons.find(w=>w.id==='rpg')){const w={...JSON.parse(JSON.stringify(WEAPONS[4])),currAmmo:WEAPONS[4].ammo,currReserve:WEAPONS[4].reserve};g.weapons.push(w);}giveP2Weapon(g,WEAPONS[4]);buildHUD();}},
+  {id:'abil_gren',icon:'💣',name:'Habilidade: Granada', desc:()=>'Ativa a Granada para os dois jogadores.',once:'abil_gren',apply:g=>{const def={id:'grenade',icon:'💣',name:'Granada',key:'N6',cd:8000,fn:'useGrenade'};if(!g.abilities.find(a=>a.id==='grenade'))g.abilities.unshift({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,true);buildHUD();}},
+  {id:'abil_rage',icon:'🔥',name:'Habilidade: Fúria',  desc:()=>'Ativa a Fúria para os dois jogadores. +50% dano por 5s.',once:'abil_rage',apply:g=>{const def={id:'rage',icon:'🔥',name:'Fúria',key:'N7',cd:20000,fn:'useRage'};if(!g.abilities.find(a=>a.id==='rage'))g.abilities.push({...def,lastUsed:-99999,active:false});giveP2Ability(g,def,false);buildHUD();}},
 ];
 
 // ============ CAÍDO / REANIMAÇÃO (CO-OP) ============
@@ -837,7 +927,38 @@ function initGame(diff){
   canvas.width=window.innerWidth;canvas.height=window.innerHeight;
 
   const hpBonus=skin.id==='swat'?0.1:0;
-  const baseHp=Math.floor(100*cfg.hpMult*(1+hpBonus));
+  const meta=getMetaUpgrades();
+  const baseHp=Math.floor(100*cfg.hpMult*(1+hpBonus))+20*(meta.hpLevel||0);
+  const baseDmgMult=1+(skin.id==='berserker'?0.2:0)+0.06*(meta.dmgLevel||0);
+  const baseSpeedVal=2.8*(skin.id==='astronaut'?1.1:1)*(1+0.05*(meta.speedLevel||0));
+  const baseCoinMult=1+(skin.id==='golden'?0.3:0)+0.10*(meta.coinLevel||0);
+  const skinHasShield=skin.id==='zombie';
+
+  const initialWeapons=[
+    {...JSON.parse(JSON.stringify(WEAPONS[0])),currAmmo:WEAPONS[0].ammo,currReserve:WEAPONS[0].reserve},
+    {...JSON.parse(JSON.stringify(WEAPONS[2])),currAmmo:WEAPONS[2].ammo,currReserve:WEAPONS[2].reserve},
+  ];
+  const initialP2Weapons=[
+    {...JSON.parse(JSON.stringify(WEAPONS[0])),currAmmo:WEAPONS[0].ammo,currReserve:WEAPONS[0].reserve},
+  ];
+  const initialAbilities=START_ABILITIES.map(a=>({...a,lastUsed:-99999,active:false}));
+  const initialP2Abilities=START_ABILITIES.map(a=>({...a,lastUsed:-99999,active:false}));
+  const unlockedFromMeta=[];
+  const metaWeaponMap={shotgun:[1,'w_shotgun'],rifle:[3,'w_rifle'],rpg:[4,'w_rpg']};
+  (meta.weapons||[]).forEach(wid=>{
+    const entry=metaWeaponMap[wid];if(!entry)return;
+    const def=WEAPONS[entry[0]];
+    if(!initialWeapons.find(w=>w.id===def.id))initialWeapons.push({...JSON.parse(JSON.stringify(def)),currAmmo:def.ammo,currReserve:def.reserve});
+    if(!initialP2Weapons.find(w=>w.id===def.id))initialP2Weapons.push({...JSON.parse(JSON.stringify(def)),currAmmo:def.ammo,currReserve:def.reserve});
+    unlockedFromMeta.push(entry[1]);
+  });
+  const metaAbilityMap={grenade:{id:'grenade',icon:'💣',name:'Granada',key:'N6',cd:8000,fn:'useGrenade',once:'abil_gren'},rage:{id:'rage',icon:'🔥',name:'Fúria',key:'N7',cd:20000,fn:'useRage',once:'abil_rage'}};
+  (meta.abilities||[]).forEach(aid=>{
+    const def=metaAbilityMap[aid];if(!def)return;
+    if(!initialAbilities.find(a=>a.id===def.id))initialAbilities[def.id==='grenade'?'unshift':'push']({...def,lastUsed:-99999,active:false});
+    if(!initialP2Abilities.find(a=>a.id===def.id))initialP2Abilities[def.id==='grenade'?'unshift':'push']({...def,lastUsed:-99999,active:false});
+    unlockedFromMeta.push(def.once);
+  });
 
   G={
     diff,cfg,skin,
@@ -845,26 +966,35 @@ function initGame(diff){
     minCtx:document.getElementById('minimapCanvas').getContext('2d'),
     running:true,paused:false,lastTime:0,
 
+    // Base stats (não são alteradas por upgrades — usadas para recalcular níveis)
+    baseMaxHp:baseHp,baseP2MaxHp:baseHp,
+    basePspeed:baseSpeedVal,baseP2Speed:2.8*(1+0.05*(meta.speedLevel||0)),
+    baseDmgMult:baseDmgMult,baseCritChance:0,baseReloadMult:1,
+    baseRegenPerSec:skin.id==='medic'?5:0,baseP2RegenPerSec:0,
+    baseVampireHeal:0,
+    baseXpMult:1+(skin.id==='scientist'?0.2:0),
+    baseCoinDropMult:baseCoinMult,
+    upgLevels:{},
+
     // P1
     px:MAP_W*TILE/2 - 50,py:MAP_H*TILE/2,
-    pspeed:2.8*(skin.id==='astronaut'?1.1:1),
+    pspeed:baseSpeedVal,
     hp:baseHp,maxHp:baseHp,
     invincible:0,lastRegen:0,reloadMult:1,
-    weapons:[
-      {...JSON.parse(JSON.stringify(WEAPONS[0])),currAmmo:WEAPONS[0].ammo,currReserve:WEAPONS[0].reserve},
-      {...JSON.parse(JSON.stringify(WEAPONS[2])),currAmmo:WEAPONS[2].ammo,currReserve:WEAPONS[2].reserve},
-    ],
+    weapons:initialWeapons,
     activeWeapon:0,lastShot:0,reloading:false,reloadStart:0,
     mouseX:0,mouseY:0,
     aimAngle:0,
     shooting:false,
-    abilities:START_ABILITIES.map(a=>({...a,lastUsed:-99999,active:false})),
-    dmgMult:1+(skin.id==='berserker'?0.2:0),
+    abilities:initialAbilities,
+    dmgMult:baseDmgMult,
     critChance:0,xpMult:1+(skin.id==='scientist'?0.2:0),
-    coinDropMult:1+(skin.id==='golden'?0.3:0),
+    coinDropMult:baseCoinMult,
     regenPerSec:skin.id==='medic'?5:0,
-    explosiveDeath:false,hasShield:skin.id==='zombie',shieldActive:skin.id==='zombie',shieldCd:0,
-    vampireHeal:0,unlockedUpgrades:[],
+    explosiveDeath:false,explosiveDeathRadius:0,explosiveDeathDamage:0,
+    skinHasShield:skinHasShield,hasShield:skinHasShield,shieldActive:skinHasShield,shieldCd:0,shieldMaxCd:30000,
+    p2HasShield:false,p2ShieldActive:false,p2ShieldCd:0,p2RegenPerSec:0,p2LastRegen:0,
+    vampireHeal:0,unlockedUpgrades:[...unlockedFromMeta],
     rageActive:false,dashDx:0,dashDy:0,dashTimer:0,
     kills:0,score:0,totalDamage:0,coinsEarned:0,
     level:1,xp:0,xpToNext:100,
@@ -876,15 +1006,13 @@ function initGame(diff){
     p2active:false,
     p2joined:false,
     p2x:MAP_W*TILE/2+50,p2y:MAP_H*TILE/2,
-    p2speed:2.8,p2hp:baseHp,p2maxHp:baseHp,
+    p2speed:2.8*(1+0.05*(meta.speedLevel||0)),p2hp:baseHp,p2maxHp:baseHp,
     p2invincible:0,p2angle:0,
-    p2abilities:START_ABILITIES.map(a=>({...a,lastUsed:-99999,active:false})),
+    p2abilities:initialP2Abilities,
     p2kills:0,p2level:1,p2xp:0,p2xpToNext:100,
     p2dashDx:0,p2dashDy:0,p2dashTimer:0,
     p2rageActive:false,p2reloading:false,p2reloadStart:0,
-    p2weapons:[
-      {...JSON.parse(JSON.stringify(WEAPONS[0])),currAmmo:WEAPONS[0].ammo,currReserve:WEAPONS[0].reserve},
-    ],
+    p2weapons:initialP2Weapons,
     p2activeWeapon:0,p2lastShot:0,
     p2shooting:false,
     p2autoAimTarget:null, // auto-aim nearest zombie
@@ -1100,7 +1228,7 @@ function buildHUD(){
   const ws=document.getElementById('weaponSlots');ws.innerHTML='';
   G.weapons.forEach((w,i)=>{
     const el=document.createElement('div');el.className='weapon-slot'+(i===G.activeWeapon?' active':'');el.id='wslot_'+i;el.onclick=()=>switchWeapon(i);
-    const ammoText=w.infinite?'∞':w.currAmmo+'/'+w.reserve;
+    const ammoText=w.infinite?'∞':w.currAmmo+'/'+w.currReserve;
     el.innerHTML=`<span class="weapon-key">${i+1}</span><span class="weapon-name">${w.icon} ${w.name}</span><span class="weapon-ammo" id="wammo_${i}">${ammoText}</span>`;
     ws.appendChild(el);
   });
@@ -1130,7 +1258,7 @@ function buildP2HUD(){
   const wsP2=document.getElementById('weaponSlotsP2');if(!wsP2)return;wsP2.innerHTML='';
   G.p2weapons.forEach((w,i)=>{
     const el=document.createElement('div');el.className='weapon-slot p2'+(i===G.p2activeWeapon?' active':'');el.id='wslotP2_'+i;el.onclick=()=>switchWeaponP2(i);
-    const ammoText=w.infinite?'∞':w.currAmmo+'/'+w.reserve;
+    const ammoText=w.infinite?'∞':w.currAmmo+'/'+w.currReserve;
     el.innerHTML=`<span class="weapon-key">${i+1}</span><span class="weapon-name">${w.icon} ${w.name}</span><span class="weapon-ammo" id="wammoP2_${i}">${ammoText}</span>`;
     wsP2.appendChild(el);
   });
@@ -1193,7 +1321,9 @@ function update(dt,ts){
   checkBunkerProximity();
   if(G.regenPerSec>0&&G.hp<G.maxHp&&ts-G.lastRegen>1000){G.hp=Math.min(G.maxHp,G.hp+G.regenPerSec);G.lastRegen=ts;}
   if(G.comboTimer>0){G.comboTimer-=dt*16;if(G.comboTimer<=0)G.combo=0;}
-  if(G.hasShield&&!G.shieldActive&&ts-G.shieldCd>30000){G.shieldActive=true;showNotif('🛡 Escudo recarregado!');}
+  if(G.hasShield&&!G.shieldActive&&ts-G.shieldCd>(G.shieldMaxCd||30000)){G.shieldActive=true;showNotif('🛡 Escudo do P1 recarregado!');}
+  if(G.p2HasShield&&!G.p2ShieldActive&&ts-(G.p2ShieldCd||0)>(G.shieldMaxCd||30000)){G.p2ShieldActive=true;showNotif('🛡 Escudo do P2 recarregado!');}
+  if(G.multiplayerMode&&G.p2RegenPerSec>0&&G.p2hp>0&&G.p2hp<G.p2maxHp&&ts-(G.p2LastRegen||0)>1000){G.p2hp=Math.min(G.p2maxHp,G.p2hp+G.p2RegenPerSec);G.p2LastRegen=ts;}
 }
 
 // ============ CAÍDO / REANIMAÇÃO — lógica principal ============
@@ -1322,7 +1452,7 @@ function updateP2Weapons(ts){
       const pw=G.p2weapons[G.p2activeWeapon];if(!pw)return;
       const need=pw.ammo-pw.currAmmo;const take=Math.min(need,pw.currReserve);
       pw.currAmmo+=take;pw.currReserve-=take;G.p2reloading=false;
-    }, w.reload);
+    }, w.reload*(G.reloadMult||1));
     return;
   }
   // P2 usa auto-aim para calcular ângulo
@@ -1330,7 +1460,9 @@ function updateP2Weapons(ts){
   const pellets=w.pellets||1;
   for(let p=0;p<pellets;p++){
     const a=autoAngle+(Math.random()-.5)*w.spread;
-    const dmg=Math.floor(w.dmg*(G.p2rageActive?1.5:1));
+    const isCrit=Math.random()<(G.critChance||0);const critM=G.skin&&G.skin.id==='demon'?3:2;
+    const base=w.dmg*(G.dmgMult||1)*(G.p2rageActive?1.5:1);
+    const dmg=Math.floor(base*(isCrit?critM:1));
     G.bullets.push({x:G.p2x,y:G.p2y,dx:Math.cos(a)*w.bulletSpeed,dy:Math.sin(a)*w.bulletSpeed,
       dmg,range:w.range,dist:0,explosive:w.explosive||false,blastR:w.blastR||0,flame:w.flame||false,color:'#4488FF',fromP2:true});
   }
@@ -1362,6 +1494,7 @@ function useP2AbilityById(id){
 function damageP2(dmg){
   if(G.p2Downed||G.p2Dead)return;
   if(G.p2invincible>0)return;
+  if(G.p2ShieldActive){G.p2ShieldActive=false;G.p2ShieldCd=performance.now();showNotif('🛡 Escudo do P2 quebrado!');return;}
   G.p2hp-=dmg;G.p2invincible=40;
   const fl=document.getElementById('damageFlash');fl.style.opacity='0.5';setTimeout(()=>fl.style.opacity='0',80);
   if(G.p2hp<=0){G.p2hp=0;
@@ -1551,8 +1684,11 @@ function killZombie(z,noLoot,fromP2=false){
     if(Math.random()<0.12)G.drops.push({x:z.x,y:z.y,type:'health',value:20,life:300});
     if(Math.random()<0.18)G.drops.push({x:z.x,y:z.y,type:'ammo',value:15,life:300});
   }
-  if(G.explosiveDeath)triggerExplosion(z.x,z.y,60,30);
-  if(G.vampireHeal>0)G.hp=Math.min(G.maxHp,G.hp+G.vampireHeal);
+  if(G.explosiveDeath)triggerExplosion(z.x,z.y,G.explosiveDeathRadius||60,G.explosiveDeathDamage||30);
+  if(G.vampireHeal>0){
+    if(fromP2&&G.multiplayerMode&&!G.p2Downed&&!G.p2Dead&&G.p2hp>0)G.p2hp=Math.min(G.p2maxHp,G.p2hp+G.vampireHeal);
+    else if(!fromP2&&!G.p1Downed&&!G.p1Dead)G.hp=Math.min(G.maxHp,G.hp+G.vampireHeal);
+  }
   if(z.boss||z.necro)showAchievement(z.necro?'💜':'👹',z.necro?'Necromante Derrotado!':'Boss Derrotado!');
   addKillFeed(z,fromP2);
   const pColor=z.necro?'#AA00FF':z.color;
@@ -1656,20 +1792,24 @@ function checkWaveComplete(){
   }
 }
 function showUpgradeScreen(){
-  const avail=WAVE_UPGRADES.filter(u=>!u.once||!G.unlockedUpgrades.includes(u.once));
+  const avail=WAVE_UPGRADES.filter(u=>!isUpgradeMaxed(G,u));
   for(let i=avail.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[avail[i],avail[j]]=[avail[j],avail[i]];}
   const picks=avail.slice(0,3);const grid=document.getElementById('upgradeGrid');grid.innerHTML='';
   picks.forEach(upg=>{
+    const curLvl=upgLevel(G,upg.id);const nextLvl=curLvl+1;
+    const levelBadge=upg.once?'':`<div class="upgrade-card-level">${curLvl>0?`NÍVEL ${curLvl} → ${nextLvl}`:'NOVO'}</div>`;
     const el=document.createElement('div');el.className='upgrade-card';
-    el.innerHTML=`<div class="upgrade-card-icon">${upg.icon}</div><div class="upgrade-card-name">${upg.name}</div><div class="upgrade-card-desc">${upg.desc}</div>`;
+    el.innerHTML=`<div class="upgrade-card-icon">${upg.icon}</div><div class="upgrade-card-name">${upg.name}</div>${levelBadge}<div class="upgrade-card-desc">${upg.desc(nextLvl)}</div>`;
     el.onclick=()=>selectUpgrade(upg);grid.appendChild(el);
   });
   document.getElementById('upgradeScreen').classList.add('active');
 }
 function selectUpgrade(upg){
   document.getElementById('upgradeScreen').classList.remove('active');
-  upg.apply(G);if(upg.once)G.unlockedUpgrades.push(upg.once);
-  showNotif(`${upg.icon} ${upg.name}!`);G.paused=false;startWave(G.wave+1);
+  pickUpgrade(G,upg);
+  const lvl=upgLevel(G,upg.id);
+  const lvlText=upg.once?'':` (Nível ${lvl})`;
+  showNotif(`${upg.icon} ${upg.name}${lvlText}!`);G.paused=false;startWave(G.wave+1);
 }
 
 // ============ CAMERA ============
@@ -1696,12 +1836,12 @@ function updateHUD(){
   if(w.infinite){document.getElementById('ammoDisplay').textContent='∞';document.getElementById('ammoReserve').textContent=' ∞';}
   else{document.getElementById('ammoDisplay').textContent=w.currAmmo;document.getElementById('ammoReserve').textContent=' / '+w.currReserve+(G.reloading?' ⟳':'');}
   G.weapons.forEach((ww,i)=>{
-    const ae=document.getElementById('wammo_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.reserve}`;
+    const ae=document.getElementById('wammo_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.currReserve}`;
     const se=document.getElementById('wslot_'+i);if(se)se.classList.toggle('active',i===G.activeWeapon);
   });
   if(G.multiplayerMode&&G.p2weapons){
     G.p2weapons.forEach((ww,i)=>{
-      const ae=document.getElementById('wammoP2_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.reserve}`;
+      const ae=document.getElementById('wammoP2_'+i);if(ae)ae.textContent=ww.infinite?'∞':`${ww.currAmmo}/${ww.currReserve}`;
       const se=document.getElementById('wslotP2_'+i);if(se)se.classList.toggle('active',i===G.p2activeWeapon);
     });
   }
