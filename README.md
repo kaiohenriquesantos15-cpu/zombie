@@ -6,6 +6,8 @@ Jogo de sobrevivência com zumbis — HTML5 Canvas.
 
 Abra `index.html` no navegador (Chrome/Firefox).
 
+Ou acesse a página do GitHub Pages se estiver habilitada.
+
 ### Controles (PC)
 - **WASD** — mover
 - **Mouse** — mirar
