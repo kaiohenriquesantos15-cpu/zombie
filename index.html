@@ -1,1 +1,29 @@
-@/home/workdir/artifacts/ZombieRush_github.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ZOMBIE RUSH — carregando…</title>
+</head>
+<body style="background:#050505;color:#e8e8e8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+<div id="st">Carregando Zombie Rush…</div>
+<script>
+(async () => {
+  const n = 8;
+  let b64 = '';
+  for (let i = 0; i < n; i++) {
+    document.getElementById('st').textContent = 'Carregando… ' + (i+1) + '/' + n;
+    const r = await fetch('b64_' + i + '.txt');
+    b64 += await r.text();
+  }
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const html = new TextDecoder('utf-8').decode(bin);
+  document.open();
+  document.write(html);
+  document.close();
+})().catch(e => {
+  document.getElementById('st').textContent = 'Erro ao carregar: ' + e;
+});
+</script>
+</body>
+</html>
