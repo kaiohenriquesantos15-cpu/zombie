@@ -9,11 +9,11 @@
 <div id="st">Carregando Zombie Rush…</div>
 <script>
 (async()=>{
-  const n=3;
+  const n=7;
   let b64='';
   for(let i=0;i<n;i++){
     document.getElementById('st').textContent='Carregando… '+(i+1)+'/'+n;
-    b64+=await (await fetch('gz_'+i+'.txt')).text();
+    b64+=await (await fetch('chunk_'+i+'.txt')).text();
   }
   const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
   const ds=new DecompressionStream('gzip');
