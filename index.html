@@ -274,13 +274,17 @@ body.hud-compact .kill-msg{font-size:11px;padding:2px 8px}
 /* ===== CAPTIONS / INSTRUÇÕES ===== */
 #captionOverlay{position:absolute;inset:0;z-index:58;display:none;background:rgba(0,0,0,0.25);pointer-events:auto}
 #captionBox{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);max-width:620px;width:88%;background:rgba(0,0,5,0.94);border:2px solid #4488ff;border-radius:6px;padding:18px 24px;text-align:center;box-shadow:0 0 30px rgba(68,136,255,0.35)}
-#captionText{font-size:15px;line-height:1.7;color:var(--text);letter-spacing:0.3px}
-#captionText b{color:#FFD700;text-shadow:0 0 8px rgba(255,215,0,0.45);font-weight:700}#captionText strong{color:#39FF14;font-weight:700}
+#captionText{font-size:15px;line-height:1.7;color:var(--text);letter-spacing:0.3px;min-height:2.4em}
+#captionText b{color:#FFD700;font-weight:700}
+.caption-cursor{display:inline-block;width:2px;height:1em;background:#4488ff;vertical-align:-0.15em;margin-left:2px;animation:capBlink .8s steps(1) infinite}
+@keyframes capBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
 .caption-controls{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px}
 .caption-dots{display:flex;gap:6px}
 .caption-dot{width:7px;height:7px;border-radius:50%;background:#334;transition:all .2s}
 .caption-dot.active{background:#4488ff;box-shadow:0 0 6px #4488ff}
 #captionNextBtn{clip-path:none;padding:9px 22px;font-size:12px;letter-spacing:1px}
+#captionSkipBtn{position:absolute;right:10px;bottom:-30px;background:none;border:none;color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;padding:6px 8px;cursor:pointer;opacity:0.65;transition:opacity .2s}
+#captionSkipBtn:hover{opacity:1;color:#fff}
 
 #gameScreen canvas{cursor:crosshair}
 #sensBadge{position:absolute;top:56px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);border:1px solid #555;padding:3px 14px;font-family:'Share Tech Mono',monospace;font-size:12px;color:#aaa;z-index:11;pointer-events:none;opacity:0;transition:opacity .4s}
@@ -392,6 +396,9 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
     <button class="btn btn-primary" onclick="showAuth('login')">⚔ ENTRAR</button>
     <button class="btn btn-secondary" onclick="showAuth('register')">☠ CRIAR CONTA</button>
     <button class="btn btn-ghost" onclick="playAsGuest()">▶ JOGAR COMO CONVIDADO</button>
+  </div>
+  <div style="margin-top:18px;font-size:11px;letter-spacing:2px;color:var(--muted);text-align:center;max-width:320px;line-height:1.6;z-index:1">
+    Entre com a sua conta — perfis não se misturam.<br>A sessão encerra ao fechar o navegador.
   </div>
 </div>
 
@@ -618,7 +625,7 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
 
   <div class="controls-footer">
     <button class="btn btn-ghost" onclick="backFromControls()" id="controlsBackBtn">← Voltar</button>
-    <button class="btn btn-primary" onclick="showDifficultyScreen()">▶ Jogar Agora</button>
+    <button class="btn btn-primary" onclick="showDifficultyScreen()" id="controlsPlayBtn">▶ Jogar Agora</button>
   </div>
 </div>
 
@@ -698,7 +705,7 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
   <div id="waveAnnounce"><div class="wave-title" id="waveTitle">WAVE 1</div><div class="wave-subtitle" id="waveSubtitle">PREPARE-SE!</div></div>
   <div id="bunkerPrompt">
     <div class="bunker-prompt-title">🏚 BUNKER PRÓXIMO</div>
-    <div class="bunker-prompt-sub" id="bunkerPromptSub">[NUM9] P1 / [F] P2 — Entrar no Bunker</div>
+    <div class="bunker-prompt-sub" id="bunkerPromptSub">[C] — Entrar no Bunker</div>
   </div>
 
   <!-- MOBILE CONTROLS -->
@@ -728,7 +735,7 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
     <div class="bunker-grid" id="bunkerGrid"></div>
     <div class="bunker-actions">
       <button class="btn btn-ghost" style="clip-path:none" onclick="closeBunker()">✕ Sair do Bunker</button>
-      <button class="btn btn-primary" id="bunkerConfirmBtn" style="clip-path:none;opacity:0.5" disabled onclick="confirmBunkerWeapon()">✓ Pegar Arma</button>
+      <button class="btn btn-primary" id="bunkerConfirmBtn" style="clip-path:none;opacity:0.5" disabled onclick="confirmBunkerWeapon()">✓ COMPRAR</button>
     </div>
   </div>
 
@@ -737,8 +744,9 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
       <div id="captionText"></div>
       <div class="caption-controls">
         <div class="caption-dots" id="captionDots"></div>
-        <button class="btn btn-primary" id="captionNextBtn" onclick="advanceCaption()">PRÓXIMO ➜</button>
+        <button class="btn btn-primary" id="captionNextBtn" onclick="advanceCaption()">PRÓXIMO</button>
       </div>
+      <button id="captionSkipBtn" onclick="skipAllCaptions()">PULAR »</button>
     </div>
   </div>
   <div id="pauseScreen">
@@ -773,7 +781,7 @@ body.mobile-mode.landscape-ok #gameScreen #mobileControls{display:block}
 <!-- LEADERBOARD -->
 <div id="leaderboardScreen" class="screen">
   <div class="screen-title">PLACAR GLOBAL</div>
-  <div class="screen-sub">OS MAIORES SOBREVIVENTES</div>
+  <div class="screen-sub">QUEM JOGOU AO MENOS 1 PARTIDA · RECORDE ATUALIZADO AO SUPERAR</div>
   <table class="lb-table">
     <thead><tr><th>#</th><th>Nome</th><th>Score</th><th>Wave</th><th>Dific.</th></tr></thead>
     <tbody id="lbBody"></tbody>
@@ -824,20 +832,114 @@ function updateSensitivity(v){
 }
 function updateSens(v){ updateSensitivity(v); }
 
-// ============ SAVE SYSTEM ============
+// ============ SAVE SYSTEM (contas permanentes no navegador) ============
+// Contas (nome + senha + progresso) ficam no localStorage e NÃO expiram.
+// Mesmo após 1 ano sem jogar, login com nome e senha corretos funciona
+// neste mesmo navegador/dispositivo (desde que os dados do site não sejam apagados).
 const SAVE_KEY='zr_v7';
-const SESS_KEY='zr_sess_v7';
+const SAVE_KEY_BACKUP='zr_v7_bak';
+const SESS_KEY='zr_sess_v8';
+const LAST_USER_KEY='zr_last_user_v8';
 let users={};
-try{users=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');}catch(e){users={};}
-let currentUser=localStorage.getItem(SESS_KEY)||null;
+function loadUsersFromStorage(){
+  let data={};
+  try{ data=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')||{}; }catch(e){ data={}; }
+  // Se a chave principal estiver vazia/corrompida, tenta backup
+  if(!data || typeof data!=='object' || !Object.keys(data).length){
+    try{
+      const bak=JSON.parse(localStorage.getItem(SAVE_KEY_BACKUP)||'{}')||{};
+      if(bak && typeof bak==='object' && Object.keys(bak).length) data=bak;
+    }catch(e){}
+  }
+  // Garante estrutura mínima de cada conta (nunca apaga senha/progresso)
+  const cleaned={};
+  for(const k in data){
+    if(k==='__guest__') continue;
+    const u=data[k];
+    if(!u || typeof u!=='object') continue;
+    cleaned[k]={
+      username: u.username || k,
+      email: u.email || '',
+      password: u.password || '', // hash btoa — permanente
+      bestScore: Number(u.bestScore)||0,
+      totalGames: Number(u.totalGames)||0,
+      totalKills: Number(u.totalKills)||0,
+      coins: Number(u.coins)||0,
+      bestWave: Number(u.bestWave)||0,
+      bestDiff: u.bestDiff || '',
+      ownedSkins: Array.isArray(u.ownedSkins)&&u.ownedSkins.length?u.ownedSkins:['default'],
+      equippedSkin: u.equippedSkin || 'default',
+      achievements: Array.isArray(u.achievements)?u.achievements:[],
+      metaUpgrades: u.metaUpgrades || null,
+      createdAt: u.createdAt || null,
+      lastLogin: u.lastLogin || null,
+    };
+  }
+  return cleaned;
+}
+users=loadUsersFromStorage();
+// Não restaura login de outro jogador automaticamente
+let currentUser=null;
+try{ localStorage.removeItem('zr_sess_v7'); localStorage.removeItem(SESS_KEY); }catch(e){}
+
 let selectedDiff=null;
 let isMultiplayer=false;
 let G={};
 let controlsOverlayVisible=false;
 
 function isGuest(){return currentUser==='__guest__';}
-function saveUsers(){const toSave={};for(const k in users){if(k!=='__guest__')toSave[k]=users[k];}try{localStorage.setItem(SAVE_KEY,JSON.stringify(toSave));}catch(e){}}
-function saveSession(){if(isGuest())localStorage.removeItem(SESS_KEY);else localStorage.setItem(SESS_KEY,currentUser||'');}
+function saveUsers(){
+  const toSave={};
+  for(const k in users){
+    if(k==='__guest__') continue;
+    const u=users[k];
+    if(!u) continue;
+    // Sempre persiste nome, senha e progresso completo
+    toSave[k]={
+      username: u.username || k,
+      email: u.email || '',
+      password: u.password || '',
+      bestScore: Number(u.bestScore)||0,
+      totalGames: Number(u.totalGames)||0,
+      totalKills: Number(u.totalKills)||0,
+      coins: Number(u.coins)||0,
+      bestWave: Number(u.bestWave)||0,
+      bestDiff: u.bestDiff || '',
+      ownedSkins: Array.isArray(u.ownedSkins)?u.ownedSkins:['default'],
+      equippedSkin: u.equippedSkin || 'default',
+      achievements: Array.isArray(u.achievements)?u.achievements:[],
+      metaUpgrades: u.metaUpgrades || defaultMetaUpgrades(),
+      createdAt: u.createdAt || null,
+      lastLogin: u.lastLogin || null,
+    };
+  }
+  try{
+    const json=JSON.stringify(toSave);
+    localStorage.setItem(SAVE_KEY, json);
+    localStorage.setItem(SAVE_KEY_BACKUP, json); // backup redundante
+  }catch(e){
+    console.warn('Falha ao salvar contas', e);
+  }
+}
+function saveSession(){
+  // Sessão só nesta ABA (sessionStorage). Contas ficam salvas no localStorage (permanentes).
+  try{
+    if(!currentUser || currentUser==='__guest__'){
+      sessionStorage.removeItem(SESS_KEY);
+    } else {
+      sessionStorage.setItem(SESS_KEY, currentUser);
+      localStorage.setItem(LAST_USER_KEY, currentUser);
+    }
+  }catch(e){}
+}
+function clearSession(){
+  currentUser=null;
+  try{
+    sessionStorage.removeItem(SESS_KEY);
+    localStorage.removeItem(SESS_KEY);
+    localStorage.removeItem('zr_sess_v7');
+  }catch(e){}
+}
 function getUser(){
   if(!currentUser)return null;
   if(isGuest()){
@@ -845,10 +947,10 @@ function getUser(){
     if(users['__guest__'])users['__guest__'].coins=0;
     return users['__guest__'];
   }
-  return users[currentUser];
+  return users[currentUser]||null;
 }
-function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades()};}
-function defaultGuest(){return{username:'CONVIDADO',email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades()};}
+function defaultUser(username){return{username,email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades(),createdAt:Date.now(),lastLogin:null};}
+function defaultGuest(){return{username:'CONVIDADO',email:'',password:'',bestScore:0,totalGames:0,totalKills:0,coins:0,bestWave:0,bestDiff:'',ownedSkins:['default'],equippedSkin:'default',achievements:[],metaUpgrades:defaultMetaUpgrades(),createdAt:Date.now(),lastLogin:null};}
 function defaultMetaUpgrades(){return{hpLevel:0,dmgLevel:0,speedLevel:0,coinLevel:0,weapons:[],abilities:[]};}
 function getMetaUpgrades(){
   const u=getUser();
@@ -879,20 +981,39 @@ function showControlsScreen(from){
   const sv=document.getElementById('sensVal'); if(sv) sv.textContent=SENSITIVITY;
   renderSettingsUI();
   setControlsPage(0);
-  // Se veio do pause, mantém o jogo "pausado" por baixo
+  const playBtn=document.getElementById('controlsPlayBtn');
+  const backBtn=document.getElementById('controlsBackBtn');
+  if(controlsReturnTo==='pause'){
+    // Na partida: esconde JOGAR AGORA (reiniciaria a run)
+    if(playBtn) playBtn.style.display='none';
+    if(backBtn) backBtn.textContent='▶ VOLTAR AO JOGO';
+  } else {
+    if(playBtn) playBtn.style.display='';
+    if(backBtn) backBtn.textContent='← Voltar';
+  }
   showScreen('controlsScreen');
+}
+function resumeFromControls(){
+  if(G && G.running){
+    showScreen('gameScreen');
+    G.paused=false;
+    const ps=document.getElementById('pauseScreen');
+    if(ps) ps.classList.remove('active');
+    updatePauseBtn(false);
+    controlsOverlayVisible=false;
+    const el=document.getElementById('controlsOverlay');
+    if(el){ el.classList.remove('show'); el.style.zIndex=''; }
+  }
+  controlsReturnTo=null;
 }
 function backFromControls(){
   if(controlsReturnTo==='pause' && G && G.running){
-    showScreen('gameScreen');
-    G.paused=true;
-    const ps=document.getElementById('pauseScreen');
-    if(ps) ps.classList.add('active');
-    updatePauseBtn(true);
+    // Volta de onde pausou — não reinicia
+    resumeFromControls();
   } else {
     showScreen('menuScreen');
+    controlsReturnTo=null;
   }
-  controlsReturnTo=null;
 }
 function setControlsPage(n){
   n=Math.max(0,Math.min(4,Number(n)||0));
@@ -930,9 +1051,22 @@ function doLogin(){
   const err=document.getElementById('loginError');
   err.style.display='none';
   if(!user||!pass){err.textContent='Preencha todos os campos.';err.style.display='block';return;}
+  // Recarrega do storage por segurança (conta pode existir de sessão anterior)
+  if(!users[user]){
+    try{
+      const fresh=loadUsersFromStorage();
+      for(const k in fresh){ if(!users[k]) users[k]=fresh[k]; }
+    }catch(e){}
+  }
   if(!users[user]){err.textContent='Usuário não encontrado.';err.style.display='block';return;}
   if(users[user].password!==btoa(pass)){err.textContent='Senha incorreta.';err.style.display='block';return;}
-  currentUser=user;saveSession();resetAuthForms();goToMenu();
+  currentUser=user;
+  users[user].lastLogin=Date.now();
+  saveUsers(); // persiste lastLogin sem alterar senha/progresso
+  saveSession();
+  resetAuthForms();
+  const lp=document.getElementById('loginPass'); if(lp) lp.value='';
+  goToMenu();
 }
 function doRegister(){
   const user=document.getElementById('regUser').value.trim();
@@ -944,16 +1078,41 @@ function doRegister(){
   if(!user||!email||!pass||!pass2){err.textContent='Preencha todos os campos.';err.style.display='block';return;}
   if(user.length<3){err.textContent='Usuário deve ter ao menos 3 caracteres.';err.style.display='block';return;}
   if(!/^[a-zA-Z0-9_]+$/.test(user)){err.textContent='Usuário: apenas letras, números e _.';err.style.display='block';return;}
+  // Recarrega antes de checar duplicata
+  try{
+    const fresh=loadUsersFromStorage();
+    for(const k in fresh){ if(!users[k]) users[k]=fresh[k]; }
+  }catch(e){}
   if(users[user]){err.textContent='Esse nome de usuário já existe.';err.style.display='block';return;}
   if(pass.length<6){err.textContent='Senha deve ter ao menos 6 caracteres.';err.style.display='block';return;}
   if(pass!==pass2){err.textContent='As senhas não coincidem.';err.style.display='block';return;}
-  const u=defaultUser(user);u.email=email;u.password=btoa(pass);
-  users[user]=u;saveUsers();
-  ok.textContent='✓ Conta criada! Fazendo login...';ok.style.display='block';
+  const u=defaultUser(user);
+  u.email=email;
+  u.password=btoa(pass); // senha salva de forma permanente com a conta
+  u.createdAt=Date.now();
+  u.lastLogin=Date.now();
+  users[user]=u;
+  saveUsers(); // grava nome + senha + perfil no navegador (não expira)
+  ok.textContent='✓ Conta criada e salva! Fazendo login...';ok.style.display='block';
   setTimeout(()=>{currentUser=user;saveSession();resetAuthForms();goToMenu();},1200);
 }
-function playAsGuest(){currentUser='__guest__';users['__guest__']=defaultGuest();goToMenu();}
-function logout(){if(isGuest())delete users['__guest__'];currentUser=null;localStorage.removeItem(SESS_KEY);resetAuthForms();showScreen('titleScreen');}
+function playAsGuest(){
+  currentUser='__guest__';
+  users['__guest__']=defaultGuest();
+  try{sessionStorage.removeItem(SESS_KEY);}catch(e){}
+  goToMenu();
+}
+function logout(){
+  if(isGuest()) delete users['__guest__'];
+  clearSession();
+  resetAuthForms();
+  try{
+    const last=localStorage.getItem(LAST_USER_KEY);
+    const inp=document.getElementById('loginUser');
+    if(last && inp) inp.value=last;
+  }catch(e){}
+  showScreen('titleScreen');
+}
 function goToMenu(){updateMenuStats();showScreen('menuScreen');}
 function updateMenuStats(){
   const u=getUser();if(!u)return;
@@ -1060,10 +1219,45 @@ function startGameFromDiff(){if(!selectedDiff)return;initGame(selectedDiff);show
 
 // ============ LEADERBOARD ============
 function showLeaderboard(){
-  const scores=Object.values(users).filter(u=>u.bestScore>0&&u.username!=='CONVIDADO').sort((a,b)=>b.bestScore-a.bestScore);
+  // Ranking: quem jogou ao menos 1 partida (independente do score ser 0 ou alto)
+  // Ordenado pelo melhor score; se empatar, mais waves; depois mais partidas
+  try{
+    const fresh=loadUsersFromStorage();
+    for(const k in fresh){
+      // mescla sem apagar dados em memória mais novos
+      if(!users[k]) users[k]=fresh[k];
+      else {
+        const a=users[k], b=fresh[k];
+        if((b.bestScore||0)>(a.bestScore||0)){ a.bestScore=b.bestScore; a.bestWave=b.bestWave; a.bestDiff=b.bestDiff; }
+        if((b.totalGames||0)>(a.totalGames||0)) a.totalGames=b.totalGames;
+        if((b.totalKills||0)>(a.totalKills||0)) a.totalKills=b.totalKills;
+        if((b.coins||0)>(a.coins||0) && currentUser!==k) a.coins=b.coins;
+        if(b.password && !a.password) a.password=b.password;
+      }
+    }
+  }catch(e){}
+  const scores=Object.values(users)
+    .filter(u=>u && u.username && u.username!=='CONVIDADO' && (Number(u.totalGames)||0)>=1)
+    .sort((a,b)=>{
+      const ds=(Number(b.bestScore)||0)-(Number(a.bestScore)||0);
+      if(ds) return ds;
+      const dw=(Number(b.bestWave)||0)-(Number(a.bestWave)||0);
+      if(dw) return dw;
+      return (Number(b.totalGames)||0)-(Number(a.totalGames)||0);
+    });
   const tbody=document.getElementById('lbBody');tbody.innerHTML='';
-  if(!scores.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Nenhuma partida ainda...</td></tr>';}
-  else{scores.slice(0,20).forEach((u,i)=>{const rc=i===0?'top1':i===1?'top2':i===2?'top3':'';const md=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';const tr=document.createElement('tr');tr.innerHTML=`<td class="lb-rank ${rc}">${md||'#'+(i+1)}</td><td class="lb-name">${u.username}${u.username===currentUser?' <span style="color:var(--acid);font-size:11px">(você)</span>':''}</td><td class="lb-score">${(u.bestScore||0).toLocaleString()}</td><td class="lb-wave">${u.bestWave||1}</td><td style="font-size:12px;color:var(--muted)">${u.bestDiff||'—'}</td>`;tbody.appendChild(tr);});}
+  if(!scores.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">Nenhuma partida ainda...</td></tr>';
+  } else {
+    scores.slice(0,50).forEach((u,i)=>{
+      const rc=i===0?'top1':i===1?'top2':i===2?'top3':'';
+      const md=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      const you=u.username===currentUser?' <span style="color:var(--acid);font-size:11px">(você)</span>':'';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="lb-rank ${rc}">${md||('#'+(i+1))}</td><td class="lb-name">${u.username}${you}</td><td class="lb-score">${(u.bestScore||0).toLocaleString()}</td><td class="lb-wave">${u.bestWave||1}</td><td style="font-size:12px;color:var(--muted)">${u.bestDiff||'—'}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
   showScreen('leaderboardScreen');
 }
 
@@ -1100,6 +1294,10 @@ const WEAPONS=[
   {id:'flamer',   name:'Lançachamas',icon:'🌋',dmg:8,  rof:60,   ammo:80, reserve:200, reload:2500,spread:0.35,auto:true, range:180, bulletSpeed:5,  bunkerOnly:true,flame:true},
   {id:'grenadel', name:'Lança-gren.',icon:'💣',dmg:90, rof:1200, ammo:6,  reserve:24,  reload:2500,spread:0.08,auto:false,range:380, bulletSpeed:6,  explosive:true,blastR:110,bunkerOnly:true},
   {id:'plasma',   name:'Plasma',     icon:'🔵',dmg:45, rof:350,  ammo:25, reserve:100, reload:1800,spread:0.06,auto:true, range:420, bulletSpeed:12, bunkerOnly:true},
+  {id:'railgun',  name:'Railgun',    icon:'⚡',dmg:200,rof:2200, ammo:4,  reserve:20,  reload:3000,spread:0.002,auto:false,range:1000,bulletSpeed:22, bunkerOnly:true},
+  {id:'crossbow', name:'Besta',      icon:'🏹',dmg:85, rof:1100, ammo:12, reserve:48,  reload:2000,spread:0.02,auto:false,range:520, bulletSpeed:13, bunkerOnly:true},
+  {id:'smg',      name:'SMG Tática', icon:'🔫',dmg:18, rof:95,   ammo:40, reserve:200, reload:1600,spread:0.09,auto:true, range:320, bulletSpeed:11, bunkerOnly:true},
+  {id:'laser',    name:'Laser',      icon:'✨',dmg:30, rof:200,  ammo:50, reserve:150, reload:2000,spread:0.03,auto:true, range:480, bulletSpeed:16, bunkerOnly:true},
 ];
 
 const ZOMBIE_TYPES=[
@@ -1251,7 +1449,7 @@ let SETTINGS = loadSettings();
     localStorage.setItem('zr_kb_migrated_v3','1');
   }catch(e){}
 })();
-function saveKeybinds(){ try{localStorage.setItem('zr_keybinds', JSON.stringify(SETTINGS.keybinds));}catch(e){} }
+function saveKeybinds(){ try{localStorage.setItem('zr_keybinds', JSON.stringify(SETTINGS.keybinds));}catch(e){} try{refreshBunkerKeyLabels();}catch(e){} }
 function saveHudSettings(){ try{localStorage.setItem('zr_hud', JSON.stringify(SETTINGS.hud));}catch(e){} }
 function saveMobileSettings(){ try{localStorage.setItem('zr_mobile', JSON.stringify(SETTINGS.mobile));}catch(e){} }
 
@@ -1269,6 +1467,31 @@ function keyLabel(code){
   if(code.indexOf('Numpad')===0) return 'Num'+code.slice(6);
   return code;
 }
+function bunkerKeyLabel(){ return keyLabel(SETTINGS.keybinds.bunker); }
+function p2BunkerKeyLabel(){ return keyLabel(SETTINGS.keybinds.p2bunker); }
+function bunkerInteractHint(){
+  return '['+bunkerKeyLabel()+']';
+}
+function refreshBunkerKeyLabels(){
+  // Atualiza todas as legendas de tecla do bunker conforme o rebind
+  const k1=bunkerKeyLabel(), k2=p2BunkerKeyLabel();
+  const bp=document.getElementById('bunkerPromptSub');
+  if(bp){
+    if(G && G.mapMode==='bunker'){
+      if(G.exitReady) bp.textContent=bunkerInteractHint()+' — Sair pela porta';
+      else if(G.nearStation) bp.textContent=bunkerInteractHint()+' — Abrir '+((G.nearStation&&G.nearStation.title)||'estação');
+      else bp.textContent=bunkerInteractHint()+' — Interagir no bunker';
+    } else {
+      bp.textContent=bunkerInteractHint()+(G&&G.multiplayerMode?(' / ['+k2+'] P2'):'')+' — Entrar no Bunker';
+    }
+  }
+  // Controles estáticos na tela de controles (se existir nota)
+  document.querySelectorAll('[data-bunker-key]').forEach(el=>{
+    el.textContent=k1;
+  });
+  updateControlsOverlayText();
+}
+
 
 const P1_KB_GROUP=['up','down','left','right','reload','weaponSwitch','dash','medkit','grenade','rage','bunker'];
 const P2_KB_GROUP=['p2up','p2down','p2left','p2right','p2dash','p2medkit','p2grenade','p2rage','p2bunker'];
@@ -1671,7 +1894,8 @@ function initGame(diff){
     p2HasShield:false,p2ShieldActive:false,p2ShieldCd:0,p2RegenPerSec:0,p2LastRegen:0,
     vampireHeal:0,unlockedUpgrades:[...unlockedFromMeta],
     rageActive:false,dashDx:0,dashDy:0,dashTimer:0,
-    kills:0,score:0,totalDamage:0,coinsEarned:0,
+    kills:0,score:0,totalDamage:0,coinsEarned:50, // crédito inicial no bunker
+    
     level:1,xp:0,xpToNext:100,
     combo:0,comboTimer:0,
     p1Downed:false,p1DownTimer:0,p1ReviveProgress:0,p1Dead:false,revives:0,
@@ -1721,17 +1945,26 @@ function initGame(diff){
     G.p2x = G.px + 36;
     G.p2y = G.py;
   }
+  // Garante que nenhum overlay residual (pausa de partida anterior) fique aberto
+  G._progressSaved=false;
+  G.captionsActive=false;
+  G.weaponModalActive=false;
+  G.bunkerInside=false;
+  G.paused=false;
+  clearGameOverlays();
   setupInput();buildHUD();applyHudSettings();
-  showNotif('🏚 BUNKER — pegue o equipamento nas caixas (E) e saia pela porta');
+  showNotif('🏚 BUNKER — use '+bunkerKeyLabel()+' nos móveis · 💰 '+getRunCoins());
 
   // Instruções iniciais em legendas — o jogador não sai até ver todas
   const introLines=[
-    '🏚️ <b>ESTE É O BUNKER</b> — sua base segura.<br>Aqui <b>os zumbis NÃO atacam</b>.',
-    '⚔️ Nas <b>waves 5, 8 e 9</b> você pode voltar ao bunker<br>para pegar <b>armas especiais</b>.',
+    'Este é o <b>BUNKER</b>, sua base segura.<br>Aqui os zumbis não atacam.',
+    'Nas <b>waves 5, 8 e 9</b> você pode voltar ao bunker<br>para pegar <b>armas especiais</b>.',
     isMultiplayer
-      ? '🔫 Você vê <b>3 armas</b> e escolhe <b>só 1</b>.<br>👥 No multi cada jogador escolhe a sua (sem repetir).<br>Upgrades são <b>compartilhados</b>.'
-      : '🔫 Você vê <b>3 armas</b> e escolhe <b>só 1</b>.',
-    '📦 Pegue o equipamento nas <b>caixas</b> (tecla <b>E</b>).<br>🚪 Depois saia pela <b>porta sul</b> e vá para a batalha!'
+      ? 'Você vê <b>3 armas</b> e escolhe apenas <b>1</b>.<br>No multiplayer cada jogador escolhe a sua, sem repetir.<br>Upgrades são <b>compartilhados</b>.'
+      : 'Você vê <b>3 armas</b> e escolhe apenas <b>1</b>.',
+    'Use a tecla <b>'+bunkerKeyLabel()+'</b> perto dos móveis para abrir<br>cada estação. Todas custam <b>moedas</b>.',
+    '<b>Arsenal</b> vende armas novas.<br><b>Suprimentos</b> tem kits de vida e munição,<br>inclusive para a arma que você tem equipada.<br><b>Upgrades</b> melhora vida, dano e velocidade.',
+    'Quando estiver pronto, vá até a porta ao sul<br>e pressione <b>'+bunkerKeyLabel()+'</b> para sair.'
   ];
   showCaptions(introLines,null);
 
@@ -1787,26 +2020,96 @@ function updatePauseBtn(paused){
 let CAPTION_QUEUE=[];
 let captionIdx=0;
 let captionOnComplete=null;
+let captionTypeTimer=null;
+let captionTypedChars=0;
+let captionDone=false; // true quando a linha atual já terminou de "digitar"
+
+function captionPlainLen(html){
+  return html.replace(/<[^>]*>/g,'').length;
+}
+// Revela só os primeiros N caracteres visíveis de um HTML, fechando tags abertas
+function captionTypedHTML(html, n){
+  let out='', visible=0, i=0;
+  const stack=[];
+  while(i<html.length && visible<n){
+    if(html[i]==='<'){
+      const close=html.indexOf('>',i);
+      if(close===-1) break;
+      const tag=html.slice(i,close+1);
+      out+=tag;
+      if(/^<\s*[a-zA-Z]/.test(tag)){
+        const m=tag.match(/^<\s*([a-zA-Z0-9]+)/);
+        if(m) stack.push(m[1]);
+      } else if(/^<\s*\//.test(tag)){
+        stack.pop();
+      }
+      i=close+1;
+    } else {
+      out+=html[i];
+      visible++; i++;
+    }
+  }
+  for(let k=stack.length-1;k>=0;k--) out+='</'+stack[k]+'>';
+  return out;
+}
 function showCaptions(lines,onComplete){
   if(!lines||!lines.length){if(onComplete)onComplete();return;}
   CAPTION_QUEUE=lines;captionIdx=0;captionOnComplete=onComplete||null;
-  if(G)G.captionsActive=true;
-  if(G)G.paused=true;
-  renderCaption();
+  if(G){G.captionsActive=true;G.paused=true;}
+  // Legendas pausam a lógica, mas NUNCA abrem o menu de pausa
+  const ps=document.getElementById('pauseScreen');
+  if(ps) ps.classList.remove('active');
+  updatePauseBtn(false);
+  startCaptionTyping();
   const ov=document.getElementById('captionOverlay');if(ov)ov.style.display='block';
 }
-function renderCaption(){
-  const txt=document.getElementById('captionText');
-  if(txt)txt.innerHTML=CAPTION_QUEUE[captionIdx];
+function startCaptionTyping(){
+  if(captionTypeTimer){clearInterval(captionTypeTimer);captionTypeTimer=null;}
+  captionTypedChars=0;
+  captionDone=false;
+  const full=CAPTION_QUEUE[captionIdx]||'';
+  const total=captionPlainLen(full);
+  updateCaptionDots();
+  updateCaptionBtnLabel();
+  captionTypeTimer=setInterval(()=>{
+    captionTypedChars++;
+    const txt=document.getElementById('captionText');
+    if(txt)txt.innerHTML=captionTypedHTML(full,captionTypedChars)+'<span class="caption-cursor"></span>';
+    if(captionTypedChars>=total){
+      clearInterval(captionTypeTimer);captionTypeTimer=null;
+      captionDone=true;
+      if(txt)txt.innerHTML=full;
+    }
+  },22);
+}
+function updateCaptionDots(){
   const dots=document.getElementById('captionDots');
   if(dots)dots.innerHTML=CAPTION_QUEUE.map((_,i)=>`<span class="caption-dot${i===captionIdx?' active':''}"></span>`).join('');
+}
+function updateCaptionBtnLabel(){
   const btn=document.getElementById('captionNextBtn');
-  if(btn)btn.textContent=(captionIdx===CAPTION_QUEUE.length-1)?'ENTENDI ✓':'PRÓXIMO ➜';
+  if(btn)btn.textContent=(captionIdx===CAPTION_QUEUE.length-1)?'ENTENDI':'PRÓXIMO';
 }
 function advanceCaption(){
-  if(captionIdx<CAPTION_QUEUE.length-1){
-    captionIdx++;renderCaption();return;
+  // primeiro toque: só termina a digitação da linha atual
+  if(!captionDone){
+    if(captionTypeTimer){clearInterval(captionTypeTimer);captionTypeTimer=null;}
+    const full=CAPTION_QUEUE[captionIdx]||'';
+    const txt=document.getElementById('captionText');
+    if(txt)txt.innerHTML=full;
+    captionDone=true;
+    return;
   }
+  if(captionIdx<CAPTION_QUEUE.length-1){
+    captionIdx++;startCaptionTyping();return;
+  }
+  closeCaptions();
+}
+function skipAllCaptions(){
+  closeCaptions();
+}
+function closeCaptions(){
+  if(captionTypeTimer){clearInterval(captionTypeTimer);captionTypeTimer=null;}
   const ov=document.getElementById('captionOverlay');if(ov)ov.style.display='none';
   if(G){G.captionsActive=false;if(!G.weaponModalActive)G.paused=false;}
   const cb=captionOnComplete;captionOnComplete=null;
@@ -1917,8 +2220,9 @@ function bunkerCellAt(wx, wy){
 }
 
 function isWalkableCell(v){
-  // Só chão (0) e porta (3) são andáveis
-  return v === 0 || v === 3;
+  // Chão (0) anda livre. Porta (3) NÃO deixa passar — o jogador é barrado
+  // bem na porta e usa a tecla de interação pra sair (ver checkBunkerExit).
+  return v === 0;
 }
 
 function isWall(wx, wy){
@@ -2040,14 +2344,81 @@ function getBunkerRoomBounds(){
 }
 
 function buildBunkerFurniture(x0,y0,roomW,roomH){
-  return [];
+  // Posições alinhadas à arte do bunker (sala 10x14), 3 móveis interativos:
+  // - Upgrades: MESA à ESQUERDA (meio da parede oeste)
+  // - Arsenal: BAÚ no canto SUPERIOR DIREITO
+  // - Suprimentos: BARRIL + kit médico no canto INFERIOR DIREITO (kits de vida + munição)
+  const stations=[
+    {id:'upgrades',    type:'upgrades',    title:'Upgrade',      icon:'⚙️', color:'#cc88ff',
+      tx:x0 + 1.85, ty:y0 + 4.6, r:46},
+    {id:'arsenal',     type:'arsenal',     title:'Arsenal',      icon:'🔫', color:'#ffaa00',
+      tx:x0 + 7.2, ty:y0 + 4.6, r:48},
+    {id:'suprimentos', type:'suprimentos', title:'Suprimentos',  icon:'💊', color:'#66ff99',
+      tx:x0 + 8.5, ty:y0 + 8.9, r:48},
+  ];
+  return stations.map(s=>({
+    ...s,
+    x:s.tx*TILE, y:s.ty*TILE,
+    open:false
+  }));
 }
+
+// Catálogo de compras do bunker (preços em moedas da run)
+const BUNKER_SUPPLIES=[
+  {id:'superkit', type:'supply', icon:'💚', name:'Superkit', desc:'Recupera TODA a vida', price:80,
+    apply:(g)=>{ g.hp=g.maxHp; if(g.p2active) g.p2hp=g.p2maxHp; showNotif('💚 Vida totalmente restaurada!'); }},
+  {id:'medpack', type:'supply', icon:'❤️', name:'Kit Médico', desc:'Cura 50% da vida máxima', price:35,
+    apply:(g)=>{ const h=Math.floor(g.maxHp*0.5); g.hp=Math.min(g.maxHp,g.hp+h); showNotif('❤️ +'+h+' HP'); }},
+  {id:'ammo_all', type:'supply', icon:'📦', name:'Caixa de Munição', desc:'Recarrega reserva de todas as armas', price:45,
+    apply:(g)=>{
+      g.weapons.forEach(w=>{ if(!w.infinite){ w.currReserve=Math.min((w.reserve||0)*2, (w.currReserve||0)+Math.floor((w.reserve||30)*0.8)); w.currAmmo=w.ammo; }});
+      if(g.p2weapons) g.p2weapons.forEach(w=>{ if(!w.infinite){ w.currReserve=Math.min((w.reserve||0)*2,(w.currReserve||0)+Math.floor((w.reserve||30)*0.8)); w.currAmmo=w.ammo; }});
+      showNotif('📦 Munição reabastecida!'); buildHUD();
+    }},
+  {id:'ammo_active', type:'supply', icon:'🔫', name:'Pente Rápido', desc:'Enche a arma atual + reserva', price:20,
+    apply:(g)=>{
+      const w=g.weapons[g.activeWeapon];
+      if(w && !w.infinite){ w.currAmmo=w.ammo; w.currReserve=Math.min((w.reserve||0)*2,(w.currReserve||0)+(w.reserve||30)); showNotif('🔫 '+w.name+' reabastecida'); buildHUD(); }
+      else showNotif('Arma atual já é infinita');
+    }},
+  {id:'shield', type:'supply', icon:'🛡️', name:'Escudo Tático', desc:'Escudo temporário 8s', price:50,
+    apply:(g)=>{ g.shieldActive=true; g.invincible=Math.max(g.invincible||0, 8*60); showNotif('🛡️ Escudo ativo!'); setTimeout(()=>{if(G)G.shieldActive=false;},8000); }},
+];
+
+const BUNKER_PAID_UPGRADES=[
+  {id:'buy_hp', icon:'❤️', name:'+25 Vida Máx', desc:'Aumenta vida máxima permanentemente nesta run', price:60,
+    apply:(g)=>{ g.maxHp+=25; g.hp+=25; g.baseMaxHp=(g.baseMaxHp||g.maxHp); showNotif('❤️ +25 HP máx'); }},
+  {id:'buy_dmg', icon:'⚔️', name:'+15% Dano', desc:'Multiplicador de dano nesta run', price:70,
+    apply:(g)=>{ g.dmgMult=(g.dmgMult||1)*1.15; showNotif('⚔️ +15% dano'); }},
+  {id:'buy_speed', icon:'💨', name:'+12% Velocidade', desc:'Move mais rápido nesta run', price:55,
+    apply:(g)=>{ g.pspeed=(g.pspeed||2.8)*1.12; showNotif('💨 Mais velocidade'); }},
+  {id:'buy_reload', icon:'🔄', name:'-20% Reload', desc:'Recarrega mais rápido', price:50,
+    apply:(g)=>{ g.reloadMult=(g.reloadMult||1)*0.8; showNotif('🔄 Reload mais rápido'); }},
+  {id:'buy_xp', icon:'⭐', name:'+25% XP', desc:'Ganha mais experiência', price:40,
+    apply:(g)=>{ g.xpMult=(g.xpMult||1)*1.25; showNotif('⭐ +25% XP'); }},
+  {id:'buy_crit', icon:'🎯', name:'+10% Crítico', desc:'Chance de dano crítico', price:65,
+    apply:(g)=>{ g.critChance=(g.critChance||0)+0.10; showNotif('🎯 Crítico +10%'); }},
+];
+
+function getRunCoins(){ return Math.max(0, Math.floor((G&&G.coinsEarned)||0)); }
+function spendRunCoins(amount){
+  if(!G) return false;
+  if(getRunCoins()<amount){ showNotif('💰 Moedas insuficientes!'); return false; }
+  G.coinsEarned-=amount;
+  return true;
+}
+function weaponPrice(w){
+  // Preço base por poder da arma bunker
+  const table={minigun:120,sniper:130,flamer:100,grenadel:140,plasma:150,railgun:200,crossbow:110,smg:90,laser:160};
+  return table[w.id]||100;
+}
+
 
 // Máscara fina 24x28 — SOMENTE área azul (chão) = 0; porta = 3; resto = 1
 const BUNKER_COL_W = 24;
 const BUNKER_COL_H = 28;
 // 0=chão andável (só aqui o personagem anda) | 1=parede (barreira) | 3=porta (andável p/ sair)
-const BUNKER_COLLISION = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1]];
+const BUNKER_COLLISION = [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]];
 
 
 
@@ -2126,36 +2497,134 @@ function buildBunkerCrates(items){
 }
 
 function tryTakeCrate(){
-  if(!G||G.mapMode!=='bunker'||!G.crates)return;
-  if(G.captionsActive||G.weaponModalActive)return;
-  for(const cr of G.crates){
-    if(cr.taken||cr.empty)continue;
-    const d=Math.hypot(G.px-cr.x,G.py-cr.y);
-    const d2=G.p2active?Math.hypot(G.p2x-cr.x,G.p2y-cr.y):999;
-    if(d<48||d2<48){
-      const it=cr.item;
-      if(!it)continue;
-      if(it.type==='weapon'){
-        const def=it.def;
-        if(!G.weapons.find(w=>w.id===def.id)){
-          G.weapons.push({...JSON.parse(JSON.stringify(def)),currAmmo:def.ammo,currReserve:def.reserve});
-          if(G.multiplayerMode)giveP2Weapon(G,def);
-        }
-        showNotif(it.icon+' '+it.name+' equipada!');
-      } else if(it.type==='ability'){
-        const def=it.def;
-        if(!G.abilities.find(a=>a.id===def.id)){
-          G.abilities.push({...def,lastUsed:-99999,active:false});
-          if(G.multiplayerMode)giveP2Ability(G,def,def.id==='grenade');
-        }
-        showNotif(it.icon+' '+it.name+' adquirida!');
-      }
-      cr.taken=true;
-      buildHUD();
-      return;
+  // Compat: redireciona para estação / saída
+  tryBunkerInteract();
+}
+function getNearBunkerStation(px,py){
+  if(!G||!G.bunkerFurniture) return null;
+  let best=null, bestD=999;
+  for(const st of G.bunkerFurniture){
+    const d=Math.hypot(px-st.x, py-st.y);
+    if(d<(st.r||42) && d<bestD){ best=st; bestD=d; }
+  }
+  return best;
+}
+function updateNearStation(){
+  if(!G||G.mapMode!=='bunker'){ if(G) G.nearStation=null; return; }
+  G.nearStation = getNearBunkerStation(G.px,G.py)
+    || (G.p2active?getNearBunkerStation(G.p2x,G.p2y):null);
+  // Prompt dinâmico
+  const el=document.getElementById('bunkerPrompt');
+  if(G.exitReady) return; // checkBunkerExit cuida
+  if(G.nearStation){
+    if(el){
+      el.style.display='block';
+      const t=document.querySelector('.bunker-prompt-title');
+      const s=document.getElementById('bunkerPromptSub');
+      if(t) t.textContent=(G.nearStation.icon||'🏚')+' '+G.nearStation.title;
+      if(s) s.textContent=bunkerInteractHint()+' — Abrir loja · 💰 '+getRunCoins();
     }
+  } else if(el && G.mapMode==='bunker' && !G.exitReady){
+    el.style.display='none';
   }
 }
+function tryBunkerInteract(){
+  if(!G||G.captionsActive||G.weaponModalActive)return;
+  if(G.mapMode==='bunker'){
+    if(G.exitReady){ exitBunkerToOutside(); return; }
+    const st=getNearBunkerStation(G.px,G.py)||(G.p2active?getNearBunkerStation(G.p2x,G.p2y):null);
+    if(st) openBunkerStation(st);
+    else showNotif(bunkerInteractHint()+' perto de um móvel: Arsenal · Suprimentos · Upgrades');
+    return;
+  }
+  if(G.bunkerNear&&G.bunker&&G.bunker.canEnter) enterBunkerFromField();
+}
+function openBunkerStation(st){
+  if(!st||!G) return;
+  G.paused=true; G.bunkerInside=true; G.activeStation=st;
+  document.getElementById('bunkerPrompt').style.display='none';
+  const titleEl=document.querySelector('#bunkerScreen .bunker-title');
+  const subEl=document.querySelector('#bunkerScreen .bunker-sub');
+  if(titleEl) titleEl.textContent=(st.icon||'🏚')+' '+(st.title||'BUNKER');
+  if(subEl) subEl.textContent='Moedas da run: 💰 '+getRunCoins()+'  ·  Tecla: '+bunkerKeyLabel();
+  const grid=document.getElementById('bunkerGrid'); grid.innerHTML='';
+  G.bunkerSelectedWeapon=null;
+  G.bunkerShopItem=null;
+  const confirmBtn=document.getElementById('bunkerConfirmBtn');
+  if(confirmBtn){ confirmBtn.disabled=true; confirmBtn.style.opacity='0.5'; confirmBtn.textContent='COMPRAR'; }
+
+  const cards=[];
+  if(st.type==='arsenal'){
+    const owned=new Set(G.weapons.map(w=>w.id));
+    const pool=WEAPONS.filter(w=>w.bunkerOnly && !owned.has(w.id));
+    if(!pool.length){
+      grid.innerHTML='<div style="color:var(--muted);padding:24px;text-align:center">Arsenal completo! 🏆</div>';
+    } else {
+      pool.forEach(w=>{
+        const price=weaponPrice(w);
+        cards.push({kind:'weapon', ref:w, price, icon:w.icon, name:w.name,
+          stats:`Dano ${w.dmg} · Pente ${w.ammo===999?'∞':w.ammo}<br>💰 ${price}`});
+      });
+    }
+  } else if(st.type==='suprimentos'){
+    // Kits de vida + munição (geral e da arma equipada) num só balcão
+    BUNKER_SUPPLIES.forEach(s=>{
+      let name=s.name, stats=s.desc+`<br>💰 ${s.price}`;
+      if(s.id==='ammo_active'){
+        const w=G.weapons&&G.weapons[G.activeWeapon];
+        if(w && !w.infinite){ name=`Munição · ${w.name}`; stats=`Enche o pente + reserva de <b>${w.name}</b><br>💰 ${s.price}`; }
+        else if(w){ return; } // arma atual já é infinita, não mostra o card
+      }
+      cards.push({kind:'supply', ref:s, price:s.price, icon:s.icon, name, stats});
+    });
+  } else if(st.type==='upgrades'){
+    BUNKER_PAID_UPGRADES.forEach(u=>{
+      cards.push({kind:'upgrade', ref:u, price:u.price, icon:u.icon, name:u.name, stats:u.desc+`<br>💰 ${u.price}`});
+    });
+  }
+
+  cards.forEach((c,idx)=>{
+    const el=document.createElement('div'); el.className='bunker-card';
+    el.innerHTML=`<div class="bunker-card-icon">${c.icon}</div><div class="bunker-card-name">${c.name}</div><div class="bunker-card-stats">${c.stats}</div>`;
+    el.onclick=()=>{
+      document.querySelectorAll('.bunker-card').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      G.bunkerShopItem=c;
+      if(confirmBtn){
+        const can=getRunCoins()>=c.price;
+        confirmBtn.disabled=!can;
+        confirmBtn.style.opacity=can?'1':'0.45';
+        confirmBtn.textContent=can?(`COMPRAR 💰${c.price}`):'SEM MOEDAS';
+      }
+    };
+    grid.appendChild(el);
+  });
+  document.getElementById('bunkerScreen').classList.add('active');
+}
+function confirmBunkerPurchase(){
+  const c=G.bunkerShopItem;
+  if(!c) return;
+  if(!spendRunCoins(c.price)) return;
+  if(c.kind==='weapon'){
+    const wd=c.ref;
+    const newW={...JSON.parse(JSON.stringify(wd)),currAmmo:wd.ammo,currReserve:wd.reserve};
+    G.weapons.push(newW);
+    if(typeof giveP2Weapon==='function') giveP2Weapon(G,wd);
+    showNotif(`${wd.icon} ${wd.name} comprada!`);
+    buildHUD();
+  } else if(c.kind==='supply' || c.kind==='upgrade'){
+    try{ c.ref.apply(G); }catch(e){ console.warn(e); }
+  }
+  // Atualiza subtitulo de moedas e fecha
+  closeBunkerStation();
+}
+function closeBunkerStation(){
+  document.getElementById('bunkerScreen').classList.remove('active');
+  G.paused=false; G.bunkerInside=false; G.activeStation=null; G.bunkerShopItem=null;
+  const subEl=document.querySelector('#bunkerScreen .bunker-sub');
+  if(subEl) subEl.textContent='Escolha com cuidado — só uma arma especial por visita clássica.';
+}
+
 function checkBunkerExit(){
   if(!G||G.mapMode!=='bunker')return;
   if(G.captionsActive||G.weaponModalActive){
@@ -2172,7 +2641,7 @@ function checkBunkerExit(){
       const t=document.querySelector('.bunker-prompt-title');
       const s=document.getElementById('bunkerPromptSub');
       if(t)t.textContent='🚪 PORTA DE SAÍDA';
-      if(s)s.textContent='[E] / [NUM9] — Sair pela porta';
+      if(s)s.textContent=bunkerInteractHint()+' — Sair pela porta';
     }
   } else {
     G.exitReady=false;
@@ -2224,15 +2693,14 @@ function enterBunkerFromField(){
   }
   if(G.p2active){G.p2x=G.px+36;G.p2y=G.py;}
   G.bunker.canEnter=false;
-  showNotif('🏚 De volta ao bunker!');
-  // Legenda + seleção de arma (repete a cada entrada nas waves 5/8/9)
+  showNotif('🏚 De volta ao bunker! 💰 '+getRunCoins()+' moedas');
+  const k=bunkerKeyLabel();
   const weaponLines=[
-    '🔫 <b>ARMAS ESPECIAIS DISPONÍVEIS!</b><br>Escolha 1 arma entre 3 opções para reforçar seu arsenal.'
+    '<b>ARSENAL</b> vende armas com as moedas da run.<br>Aproxime-se do móvel e pressione <b>'+k+'</b>.',
+    '<b>SUPRIMENTOS</b> tem kits de vida e munição,<br>inclusive para a arma equipada.<br><b>UPGRADES</b> melhora vida, dano e velocidade.',
+    'Saia pela porta ao sul com a tecla <b>'+k+'</b><br>quando estiver pronto.'
   ];
-  if(G.multiplayerMode&&G.p2active){
-    weaponLines.push('👥 Cada jogador escolhe a própria arma — elas não se repetem entre vocês dois.');
-  }
-  showCaptions(weaponLines,()=>{ startBunkerWeaponSelection(); });
+  showCaptions(weaponLines, null);
 }
 function buildWallWeapons(tier){
   // Armas especiais na parede direita conforme tier (wave 5/8/9)
@@ -2301,7 +2769,7 @@ function checkBunkerProximity(){
       const t=document.querySelector('.bunker-prompt-title');
       const s=document.getElementById('bunkerPromptSub');
       if(t)t.textContent='BUEIRO';
-      if(s)s.textContent='[E] Entrar no bunker — armas especiais';
+      if(s)s.textContent=bunkerInteractHint()+' — Entrar no bunker';
     }
   }
 }
@@ -2326,6 +2794,8 @@ function openBunker(){
 }
 function closeBunker(){document.getElementById('bunkerScreen').classList.remove('active');G.paused=false;G.bunkerInside=false;}
 function confirmBunkerWeapon(){
+  // Novo fluxo: compra na estação
+  if(G && G.bunkerShopItem){ confirmBunkerPurchase(); return; }
   if(!G.bunkerSelectedWeapon)return;
   const wd=G.bunkerSelectedWeapon;
   const newW={...JSON.parse(JSON.stringify(wd)),currAmmo:wd.ammo,currReserve:wd.reserve};
@@ -2333,6 +2803,8 @@ function confirmBunkerWeapon(){
   giveP2Weapon(G,wd);
   G.bunker.used=true;G.bunker.weaponsReady=false;buildHUD();showNotif(`${wd.icon} ${wd.name} adicionada ao arsenal!`);closeBunker();
 }
+function closeBunker(){ closeBunkerStation(); }
+
 
 // ============ MAP ============
 function generateMap(){
@@ -2505,21 +2977,7 @@ function setupInput(){
 
     // ---- P1 BUNKER (remapeável) ----
     if(e.code===kb.bunker&&!G.captionsActive&&!G.weaponModalActive){
-      if(G.mapMode==='bunker'){
-        if(G.exitReady)exitBunkerToOutside();
-        else tryTakeCrate();
-      } else if(G.bunkerNear&&G.bunker&&G.bunker.canEnter){
-        enterBunkerFromField();
-      }
-    }
-    // Interagir no bunker / bueiro com E
-    if(e.code==='KeyE'&&!G.captionsActive&&!G.weaponModalActive){
-      if(G.mapMode==='bunker'){
-        if(G.exitReady)exitBunkerToOutside();
-        else tryTakeCrate();
-      } else if(G.bunkerNear&&G.bunker&&G.bunker.canEnter){
-        enterBunkerFromField();
-      }
+      tryBunkerInteract();
     }
 
     // ---- P2: ESPAÇO — entrar OU atirar (somente multiplayer) ----
@@ -2545,7 +3003,7 @@ function setupInput(){
       if(e.code===kb.p2rage)useP2AbilityById('rage');
       // Bunker P2 (remapeável)
       if(e.code===kb.p2bunker&&!G.captionsActive&&!G.weaponModalActive){
-        if(G.mapMode==='bunker'){if(G.exitReady)exitBunkerToOutside();else tryTakeCrate();}
+        if(G.mapMode==='bunker'){tryBunkerInteract();}
       }
     }
 
@@ -2706,7 +3164,7 @@ function setupMobileControls(){
   bunkerBtn.addEventListener('touchstart', e=>{
     e.preventDefault();
     if(!G || !G.running || G.captionsActive || G.weaponModalActive) return;
-    if(G.mapMode==='bunker'){mcVibrate(20);if(G.exitReady)exitBunkerToOutside();else tryTakeCrate();} else if(G.bunkerNear&&G.bunker&&G.bunker.canEnter){mcVibrate(20);enterBunkerFromField();}
+    if(G.mapMode==='bunker'){mcVibrate(20);tryBunkerInteract();} else if(G.bunkerNear&&G.bunker&&G.bunker.canEnter){mcVibrate(20);enterBunkerFromField();}
   }, {passive:false});
 
   // Prevent page scroll/zoom during game
@@ -2873,7 +3331,7 @@ function update(dt,ts){
   if(G.p2active)updateP2HUD();
   updateKillFeed();
   checkBunkerProximity();
-  if(G.mapMode==='bunker'){checkBunkerExit();}
+  if(G.mapMode==='bunker'){checkBunkerExit();updateNearStation();}
   if(G.regenPerSec>0&&G.hp<G.maxHp&&ts-G.lastRegen>1000){G.hp=Math.min(G.maxHp,G.hp+G.regenPerSec);G.lastRegen=ts;}
   if(G.comboTimer>0){G.comboTimer-=dt*16;if(G.comboTimer<=0)G.combo=0;}
   if(G.hasShield&&!G.shieldActive&&ts-G.shieldCd>(G.shieldMaxCd||30000)){G.shieldActive=true;showNotif('🛡 Escudo do P1 recarregado!');}
@@ -3817,7 +4275,7 @@ function render(){
   renderPlayer(ctx);
   if(G.p2active)renderP2(ctx);
   if(G.bunker)renderBunkerIndicator(ctx);
-  if(G.mapMode==='bunker'){renderBunkerCrates(G.ctx);renderWallWeapons(G.ctx);}
+  if(G.mapMode==='bunker'){renderBunkerStations(G.ctx);renderBunkerCrates(G.ctx);renderWallWeapons(G.ctx);}
   ctx.restore();
   renderMinimap();
   renderCrosshair(ctx);
@@ -4007,6 +4465,50 @@ function renderWallWeapons(ctx){
   }
 }
 
+
+function renderBunkerStations(ctx){
+  if(!G.bunkerFurniture||G.mapMode!=='bunker') return;
+  const now=performance.now();
+  for(const st of G.bunkerFurniture){
+    const near = G.nearStation && G.nearStation.id===st.id;
+    const pulse=0.6+0.4*Math.sin(now*0.005);
+    ctx.save();
+    ctx.translate(st.x, st.y);
+    // pedestal
+    ctx.fillStyle='rgba(0,0,0,0.55)';
+    ctx.beginPath(); ctx.roundRect(-22,-18,44,36,6); ctx.fill();
+    ctx.strokeStyle=st.color||'#4488ff';
+    ctx.lineWidth=near?3:1.5;
+    ctx.globalAlpha=near?0.95:0.75;
+    ctx.stroke();
+    // icon
+    ctx.globalAlpha=1;
+    ctx.font='20px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(st.icon||'📦', 0, -2);
+    // label (com fundo próprio pra nunca sobrepor a sala, tamanho fixo pequeno)
+    ctx.font='bold 10px Oswald, sans-serif';
+    const label=st.title||'';
+    const labelW=ctx.measureText(label).width;
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(-labelW/2-4, -33, labelW+8, 13);
+    ctx.fillStyle=st.color||'#88bbff';
+    ctx.fillText(label, 0, -26);
+    if(near){
+      ctx.fillStyle='#fff';
+      ctx.font='bold 11px Oswald, sans-serif';
+      ctx.fillText(bunkerInteractHint()+' ABRIR', 0, 28);
+      // ring
+      ctx.strokeStyle=st.color||'#4488ff';
+      ctx.globalAlpha=0.4+0.3*pulse;
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(0,0, 30+pulse*4, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 function renderBunkerCrates(ctx){
   if(!G.crates||G.mapMode!=='bunker')return;
   for(const cr of G.crates){
@@ -4051,10 +4553,14 @@ function renderBunkerCrates(ctx){
   const doorY=y1*TILE + TILE*0.5;
   if(G.exitReady){
     ctx.save();
-    ctx.fillStyle='rgba(200,220,255,0.9)';
-    ctx.font='bold 12px Oswald';
+    ctx.font='bold 12px Oswald, sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('⬇ SAÍDA [E]', doorX, doorY);
+    const label='⬇ SAÍDA [E]';
+    const w=ctx.measureText(label).width;
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(doorX-w/2-6, doorY-13, w+12, 18);
+    ctx.fillStyle='rgba(200,220,255,0.95)';
+    ctx.fillText(label, doorX, doorY);
     ctx.restore();
   }
 }
@@ -4296,56 +4802,88 @@ function renderMinimap(){
   ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.strokeRect(G.camX/TILE*sx,G.camY/TILE*sy,G.canvas.width/TILE*sx,G.canvas.height/TILE*sy);
 }
 
+// ============ CLEANUP OVERLAYS / SAVE PROGRESS ============
+function clearGameOverlays(){
+  const ps=document.getElementById('pauseScreen');
+  if(ps) ps.classList.remove('active');
+  const ov=document.getElementById('captionOverlay');
+  if(ov) ov.style.display='none';
+  if(captionTypeTimer){try{clearInterval(captionTypeTimer);}catch(e){} captionTypeTimer=null;}
+  const bs=document.getElementById('bunkerScreen');
+  if(bs) bs.classList.remove('active');
+  const us=document.getElementById('upgradeScreen');
+  if(us) us.classList.remove('active');
+  const el=document.getElementById('controlsOverlay');
+  if(el){ el.classList.remove('show'); el.style.zIndex=''; }
+  controlsOverlayVisible=false;
+  const h2=document.getElementById('hudRightP2'); if(h2) h2.classList.remove('active');
+  const pj=document.getElementById('p2joinPrompt'); if(pj) pj.classList.remove('active');
+  const pa=document.getElementById('p2AutoAimBadge'); if(pa) pa.classList.remove('active');
+  updatePauseBtn(false);
+}
+
+/** Salva progresso permanente do jogador logado (moedas, kills, recordes).
+ *  Idempotente por partida via G._progressSaved. */
+function saveRunProgress(){
+  if(!G || G._progressSaved) return false;
+  if(isGuest()){
+    if(users['__guest__']) users['__guest__'].coins=0;
+    G._progressSaved=true;
+    return false;
+  }
+  const u=getUser();
+  if(!u) return false;
+  // 1+ partida => entra no ranking
+  u.totalGames=(u.totalGames||0)+1;
+  u.totalKills=(u.totalKills||0)+(G.kills||0)+(G.p2kills||0);
+  u.coins=(u.coins||0)+Math.max(0, Math.floor(G.coinsEarned||0));
+  const runScore=Number(G.score)||0;
+  const prevBest=Number(u.bestScore)||0;
+  // Primeira partida: registra score mesmo se 0. Depois: só atualiza se SUPERAR o antigo
+  if(u.totalGames===1 || runScore>prevBest){
+    u.bestScore=runScore;
+    u.bestWave=G.wave||1;
+    try{ u.bestDiff=DIFF_CONFIGS[G.diff].name; }catch(e){ u.bestDiff=u.bestDiff||''; }
+  }
+  // Conta (nome+senha) e progresso gravados de forma permanente
+  saveUsers();
+  G._progressSaved=true;
+  return true;
+}
+
 // ============ GAME OVER ============
 function endGame(){
   G.running=false;document.onkeydown=null;document.onkeyup=null;
   if(G.canvas){G.canvas.onmousedown=null;G.canvas.onmouseup=null;G.canvas.onmousemove=null;}
+  clearGameOverlays();
   const guest=isGuest();
-  if(!guest){
-    const u=getUser();
-    if(u){
-      u.totalGames=(u.totalGames||0)+1;
-      u.totalKills=(u.totalKills||0)+G.kills;
-      u.coins=(u.coins||0)+G.coinsEarned;
-      if(G.score>(u.bestScore||0)){u.bestScore=G.score;u.bestWave=G.wave;u.bestDiff=DIFF_CONFIGS[G.diff].name;}
-      saveUsers();
-    }
-  } else {
-    // Convidado: garante que moedas nunca fiquem salvas/acumuladas
-    if(users['__guest__'])users['__guest__'].coins=0;
-  }
+  saveRunProgress();
   document.getElementById('guestNoSave').style.display=guest?'block':'none';
-  document.getElementById('goScore').textContent=G.score.toLocaleString();
-  document.getElementById('goWave').textContent=G.wave;
-  document.getElementById('goKills').textContent=G.kills;
-  document.getElementById('goDamage').textContent=G.totalDamage.toLocaleString();
-  document.getElementById('goLevel').textContent=G.level;
-  document.getElementById('goCoins').textContent=guest?G.coinsEarned+' (não salvo)':G.coinsEarned;
-  document.getElementById('goTitle').textContent=G.kills>50?'💀 LEGEND!':'GAME OVER';
+  document.getElementById('goScore').textContent=(G.score||0).toLocaleString();
+  document.getElementById('goWave').textContent=G.wave||1;
+  document.getElementById('goKills').textContent=G.kills||0;
+  document.getElementById('goDamage').textContent=(G.totalDamage||0).toLocaleString();
+  document.getElementById('goLevel').textContent=G.level||1;
+  document.getElementById('goCoins').textContent=guest?(G.coinsEarned||0)+' (não salvo)':(G.coinsEarned||0);
+  document.getElementById('goTitle').textContent=(G.kills||0)>50?'💀 LEGEND!':'GAME OVER';
   const p2stat=document.getElementById('goP2KillsStat');
-  if(G.multiplayerMode){p2stat.style.display='block';document.getElementById('goP2Kills').textContent=G.p2kills;}
+  if(G.multiplayerMode){p2stat.style.display='block';document.getElementById('goP2Kills').textContent=G.p2kills||0;}
   else p2stat.style.display='none';
-  document.getElementById('hudRightP2').classList.remove('active');
-  document.getElementById('p2joinPrompt').classList.remove('active');
-  document.getElementById('p2AutoAimBadge').classList.remove('active');
   showScreen('gameOverScreen');
 }
 function quitGame(){
   G.running=false;document.onkeydown=null;document.onkeyup=null;
-  document.getElementById('bunkerScreen').classList.remove('active');
-  document.getElementById('hudRightP2').classList.remove('active');
-  document.getElementById('p2joinPrompt').classList.remove('active');
-  document.getElementById('p2AutoAimBadge').classList.remove('active');
-  if(!isGuest()){
-    const u=getUser();
-    if(u){u.totalGames=(u.totalGames||0)+1;u.coins=(u.coins||0)+G.coinsEarned;saveUsers();}
-  } else {
-    if(users['__guest__'])users['__guest__'].coins=0;
-  }
+  if(G.canvas){G.canvas.onmousedown=null;G.canvas.onmouseup=null;G.canvas.onmousemove=null;}
+  // Sempre salva progresso (moedas, kills, recordes) ao sair da partida
+  saveRunProgress();
+  clearGameOverlays();
+  if(G){ G.paused=false; G.captionsActive=false; G.weaponModalActive=false; G.bunkerInside=false; }
   showScreen('menuScreen');updateMenuStats();
 }
 function togglePause(){
-  if(G.bunkerInside)return;
+  if(!G || !G.running) return;
+  // Não abrir/fechar menu de pausa durante legendas, modal de arma ou estação do bunker
+  if(G.bunkerInside || G.captionsActive || G.weaponModalActive) return;
   G.paused=!G.paused;
   document.getElementById('pauseScreen').classList.toggle('active',G.paused);
   updatePauseBtn(G.paused);
@@ -4359,14 +4897,50 @@ function togglePause(){
 
 window.addEventListener('resize',()=>{if(G.canvas){G.canvas.width=window.innerWidth;G.canvas.height=window.innerHeight;}});
 
+// Salva progresso se o jogador fechar a aba/janela no meio da partida
+window.addEventListener('pagehide',()=>{
+  try{
+    if(G && G.running && !G._progressSaved){
+      saveRunProgress();
+    } else {
+      // Mesmo fora de partida, persiste qualquer alteração em memória (skins, meta, etc.)
+      if(!isGuest() && currentUser) saveUsers();
+    }
+  }catch(e){}
+});
+window.addEventListener('beforeunload',()=>{
+  try{
+    if(G && G.running && !G._progressSaved) saveRunProgress();
+    else if(!isGuest() && currentUser) saveUsers();
+  }catch(e){}
+});
+
 window.onload=()=>{
   applyHudSettings();
   applyMobileSettings();
-  if(currentUser&&currentUser!=='__guest__'&&users[currentUser]){
-    const u=users[currentUser];
-    if(!u.ownedSkins)u.ownedSkins=['default'];if(!u.equippedSkin)u.equippedSkin='default';if(!u.achievements)u.achievements=[];
-    saveUsers();goToMenu();
-  }else{localStorage.removeItem(SESS_KEY);currentUser=null;showScreen('titleScreen');}
+  // Login obrigatório a cada nova visita do navegador.
+  // Só mantém sessão se for a MESMA aba (F5 / reload).
+  currentUser=null;
+  try{
+    const sess=sessionStorage.getItem(SESS_KEY);
+    if(sess && sess!=='__guest__' && users[sess]){
+      currentUser=sess;
+      const u=users[currentUser];
+      if(!u.ownedSkins)u.ownedSkins=['default'];
+      if(!u.equippedSkin)u.equippedSkin='default';
+      if(!u.achievements)u.achievements=[];
+      saveUsers();
+      goToMenu();
+      return;
+    }
+  }catch(e){}
+  clearSession();
+  try{
+    const last=localStorage.getItem(LAST_USER_KEY);
+    const inp=document.getElementById('loginUser');
+    if(last && inp) inp.value=last;
+  }catch(e){}
+  showScreen('titleScreen');
 };
 </script>
 
